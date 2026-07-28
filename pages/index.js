@@ -1,5 +1,4 @@
 import Head from 'next/head';
-import Link from 'next/link';
 import styles from '../styles/Home.module.css';
 
 export default function Home() {
@@ -14,17 +13,17 @@ export default function Home() {
 
       <header className={styles.header}>
         <div className={styles.navBar}>
-          <Link href="/" className={styles.navBrand}>
+          <a href="/" className={styles.navBrand}>
             <img src="/assets/centerpiece.jpg" alt="Regulators MC logo" />
             <span>Regulators MC<small>Palm Bay, FL</small></span>
-          </Link>
+          </a>
           <nav>
             <ul>
-              <li><Link href="/" className={styles.active}>Home</Link></li>
-              <li><Link href="/events">Events</Link></li>
-              <li><Link href="/gallery">Gallery</Link></li>
-              <li><Link href="/contact">Contact</Link></li>
-              <li><Link href="/login">Members</Link></li>
+              <li><a href="/" className={styles.active}>Home</a></li>
+              <li><a href="/events">Events</a></li>
+              <li><a href="/gallery">Gallery</a></li>
+              <li><a href="/contact">Contact</a></li>
+              <li><a href="/login">Members</a></li>
             </ul>
           </nav>
         </div>
@@ -35,7 +34,7 @@ export default function Home() {
         <h1>Regulators MC</h1>
         <div className={styles.chapter}>Palm Bay, FL</div>
         <div className={styles.motto}>My Brothers Keepers</div>
-        <Link href="/events" className={styles.btn}>See What's Happening</Link>
+        <a href="/events" className={styles.btn}>See What's Happening</a>
         <a className={`${styles.btn} ${styles.btnOutline}`} href="https://www.facebook.com/p/Regulators-MC-Palm-Bay-61567190639496/" target="_blank" rel="noopener">Follow Us on Facebook</a>
       </div>
 
@@ -77,7 +76,7 @@ export default function Home() {
               <p>The chapter rides up for Biketoberfest every fall. Check with the chapter for this year's plans.</p>
             </div>
           </div>
-          <Link href="/events" className={styles.btn}>Full Events Page</Link>
+          <a href="/events" className={styles.btn}>Full Events Page</a>
         </section>
 
         <section>
@@ -92,7 +91,7 @@ export default function Home() {
             <div>
               <p className={styles.lead}>Interested in the Regulators MC Palm Bay Chapter?</p>
               <p style={{marginTop:'1rem'}}>We don't recruit — becoming a Regulator starts with your own interest, and it starts in person. The basics: you ride your own motorcycle, you're licensed and insured, and you carry yourself with good character — in and out of a cut. If that's you, come out to a public event, meet the members, and get to know us.</p>
-              <Link href="/contact" className={styles.btn}>Get In Touch</Link>
+              <a href="/contact" className={styles.btn}>Get In Touch</a>
             </div>
           </div>
         </section>
