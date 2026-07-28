@@ -9,6 +9,28 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="assets/centerpiece.jpg">
+<style>
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
+.modal.open { display: flex; justify-content: center; align-items: center; }
+.modal-content { background: #17131d; border: 1px solid #4b1f7a; border-radius: 8px; padding: 2rem; max-width: 400px; width: 90%; box-shadow: 0 0 40px rgba(123, 47, 191, 0.4); position: relative; }
+.modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: #b98ae8; font-size: 1.8rem; cursor: pointer; }
+.modal-close:hover { color: #eeeef2; }
+.modal-header { text-align: center; margin-bottom: 1.5rem; border-bottom: 2px solid #7b2fbf; padding-bottom: 1rem; }
+.modal-header h2 { font-family: "Oswald", sans-serif; font-size: 1.5rem; color: #eeeef2; margin: 0 0 0.3rem 0; letter-spacing: 0.1em; text-transform: uppercase; }
+.modal-header p { color: #b98ae8; font-size: 0.85rem; margin: 0; }
+.modal-form { display: flex; flex-direction: column; gap: 1rem; }
+.modal-form-group { display: flex; flex-direction: column; }
+.modal-form-group label { color: #c9c9d1; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+.modal-form-group input { padding: 0.7rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
+.modal-form-group input:focus { outline: none; border-color: #7b2fbf; box-shadow: 0 0 8px rgba(123, 47, 191, 0.3); }
+.modal-submit { padding: 0.8rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+.modal-submit:hover { background: #9345d6; }
+.modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+.modal-error { background: rgba(212, 43, 30, 0.15); border: 1px solid #d42b1e; border-radius: 4px; padding: 0.7rem; color: #ff6b5a; font-size: 0.9rem; display: none; }
+.modal-error.show { display: block; }
+.modal-success { background: rgba(75, 192, 75, 0.15); border: 1px solid #4bc04b; border-radius: 4px; padding: 0.7rem; color: #6fd36f; font-size: 0.9rem; display: none; }
+.modal-success.show { display: block; }
+</style>
 </head>
 <body>
 
@@ -24,7 +46,7 @@
         <li><a href="events.html">Events</a></li>
         <li><a href="gallery.html" class="active">Gallery</a></li>
         <li><a href="contact.html">Contact</a></li>
-        <li><a href="/login">Members</a></li>
+        <li><a href="#" onclick="openLoginModal(event)">Members</a></li>
       </ul>
     </nav>
   </div>
@@ -75,6 +97,96 @@
   <div>Regulators MC — Palm Bay Chapter — Palm Bay, Florida</div>
   <div class="fine">© 2026 Regulators MC Palm Bay Chapter. All colors, patches, and logos are property of the Regulators MC.</div>
 </footer>
+
+<div id="loginModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeLoginModal()">&times;</button>
+    <div class="modal-header">
+      <h2>Members Login</h2>
+      <p>Regulators MC — Palm Bay, FL</p>
+    </div>
+    <div id="loginError" class="modal-error"></div>
+    <div id="loginSuccess" class="modal-success"></div>
+    <form class="modal-form" onsubmit="handleLogin(event)">
+      <div class="modal-form-group">
+        <label for="loginEmail">Email</label>
+        <input id="loginEmail" type="email" required />
+      </div>
+      <div class="modal-form-group">
+        <label for="loginPassword">Password</label>
+        <input id="loginPassword" type="password" required />
+      </div>
+      <button type="submit" class="modal-submit" id="loginSubmit">Login</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openLoginModal(e) {
+  e.preventDefault();
+  document.getElementById('loginModal').classList.add('open');
+  document.getElementById('loginEmail').focus();
+}
+
+function closeLoginModal() {
+  document.getElementById('loginModal').classList.remove('open');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('loginSuccess').classList.remove('show');
+}
+
+function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errorDiv = document.getElementById('loginError');
+  const successDiv = document.getElementById('loginSuccess');
+  const submitBtn = document.getElementById('loginSubmit');
+
+  errorDiv.classList.remove('show');
+  successDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Logging in...';
+
+  fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (!data.user) {
+      errorDiv.textContent = data.error || 'Login failed';
+      errorDiv.classList.add('show');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Login';
+      return;
+    }
+    successDiv.textContent = 'Login successful! Redirecting...';
+    successDiv.classList.add('show');
+    setTimeout(() => {
+      if (data.user.role === 'master-admin' || data.user.role === 'officer') {
+        window.location.href = '/admin/dashboard';
+      } else {
+        window.location.href = '/members';
+      }
+    }, 500);
+  })
+  .catch(err => {
+    errorDiv.textContent = 'An error occurred. Please try again.';
+    errorDiv.classList.add('show');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Login';
+  });
+}
+
+document.getElementById('loginModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('loginModal')) {
+    closeLoginModal();
+  }
+});
+</script>
 
 </body>
 </html>
