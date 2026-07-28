@@ -1,0 +1,145 @@
+.container {
+  min-height: 100vh;
+  background: #f8f8f8;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 18px;
+  color: #7b2fbf;
+}
+
+.header {
+  background: linear-gradient(135deg, #2a1145 0%, #4b1f7a 100%);
+  color: white;
+  padding: 30px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.header h1 {
+  font-size: 28px;
+  margin-top: 10px;
+}
+
+.backLink {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.3s ease;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+
+.backLink:hover {
+  opacity: 0.8;
+}
+
+.logout {
+  padding: 10px 20px;
+  background: white;
+  color: #7b2fbf;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.logout:hover {
+  background: #f0f0f0;
+}
+
+.main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.empty {
+  background: white;
+  border-radius: 8px;
+  padding: 60px 20px;
+  text-align: center;
+  color: #999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.contentList {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.item {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid #7b2fbf;
+}
+
+.item h3 {
+  font-size: 20px;
+  margin-bottom: 10px;
+  color: #7b2fbf;
+}
+
+.date {
+  font-weight: 600;
+  color: #d42b1e;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.time {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.location {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.description {
+  color: #333;
+  line-height: 1.6;
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+}
+
+@media (prefers-color-scheme: dark) {
+  .container {
+    background: #1a1a1a;
+  }
+
+  .item {
+    background: #222;
+  }
+
+  .empty {
+    background: #222;
+  }
+
+  .item h3 {
+    color: #c9c9d1;
+  }
+
+  .description {
+    color: #ddd;
+  }
+
+  .time,
+  .location {
+    color: #999;
+  }
+}
