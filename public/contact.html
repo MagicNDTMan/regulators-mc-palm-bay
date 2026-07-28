@@ -178,12 +178,9 @@ function handleLogin(e) {
     }
     successDiv.textContent = 'Login successful! Redirecting...';
     successDiv.classList.add('show');
+    localStorage.setItem('authToken', JSON.stringify(data.user));
     setTimeout(() => {
-      if (data.user.role === 'master-admin' || data.user.role === 'officer') {
-        window.location.href = '/admin/dashboard';
-      } else {
-        window.location.href = '/members';
-      }
+      window.location.href = 'members.html';
     }, 500);
   })
   .catch(err => {
