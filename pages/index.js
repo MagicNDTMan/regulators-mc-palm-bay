@@ -8,7 +8,6 @@ export default function Home() {
         <meta name="description" content="Regulators Motorcycle Club, Palm Bay Chapter — Palm Bay, Florida. My Brothers Keepers." />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="/styles/style.css" />
       </Head>
 
       <header>
