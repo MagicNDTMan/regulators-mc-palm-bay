@@ -30,6 +30,12 @@
 .modal-error.show { display: block; }
 .modal-success { background: rgba(75, 192, 75, 0.15); border: 1px solid #4bc04b; border-radius: 4px; padding: 0.7rem; color: #6fd36f; font-size: 0.9rem; display: none; }
 .modal-success.show { display: block; }
+.social-embed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; align-items: start; }
+.fb-embed-wrap { background: #17131d; border: 1px solid #4b1f7a; border-radius: 8px; padding: 1rem; overflow: hidden; }
+.ig-follow-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 4px solid #7b2fbf; border-radius: 8px; padding: 2rem; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; }
+.ig-follow-card .ig-icon { width: 56px; height: 56px; margin-bottom: 1rem; }
+.ig-follow-card h3 { text-transform: uppercase; letter-spacing: 0.08em; color: #eeeef2; margin-bottom: 0.5rem; }
+.ig-follow-card p { color: var(--silver); margin-bottom: 1.2rem; }
 </style>
 </head>
 <body>
@@ -85,9 +91,37 @@
   </section>
 
   <section>
-    <h2>Add Your Photos</h2>
-    <p class="lead">Got shots from a ride or event? Drop them in the shared drive's <strong>Pics</strong> folder, then copy them into the website's <strong>assets</strong> folder and add a card here.</p>
-    <p style="margin-top:0.8rem;">More photos on our <a href="https://www.facebook.com/p/Regulators-MC-Palm-Bay-61567190639496/" target="_blank" rel="noopener">Facebook page</a>.</p>
+    <h2>More Photos</h2>
+    <p class="lead">We post ride and event photos to Facebook and Instagram as they happen — follow along for the full album.</p>
+    <div class="social-embed-grid" style="margin-top:1.5rem;">
+      <div class="fb-embed-wrap">
+        <div id="fb-root"></div>
+        <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0"></script>
+        <div class="fb-page"
+          data-href="https://www.facebook.com/p/Regulators-MC-Palm-Bay-61567190639496/"
+          data-tabs="timeline"
+          data-width=""
+          data-height="600"
+          data-small-header="false"
+          data-adapt-container-width="true"
+          data-hide-cover="false"
+          data-show-facepile="false">
+          <blockquote cite="https://www.facebook.com/p/Regulators-MC-Palm-Bay-61567190639496/" class="fb-xfbml-parse-ignore">
+            <a href="https://www.facebook.com/p/Regulators-MC-Palm-Bay-61567190639496/" target="_blank" rel="noopener">Regulators MC Palm Bay, FL</a>
+          </blockquote>
+        </div>
+      </div>
+      <div class="ig-follow-card">
+        <svg class="ig-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="2" y="2" width="20" height="20" rx="5" stroke="#b98ae8" stroke-width="1.6"/>
+          <circle cx="12" cy="12" r="4.5" stroke="#b98ae8" stroke-width="1.6"/>
+          <circle cx="17.4" cy="6.6" r="1.2" fill="#b98ae8"/>
+        </svg>
+        <h3>@regulatorsmcpalmbay</h3>
+        <p>Rides, events, and brotherhood — follow us on Instagram for the latest.</p>
+        <a class="btn" href="https://www.instagram.com/regulatorsmcpalmbay/" target="_blank" rel="noopener">Follow on Instagram</a>
+      </div>
+    </div>
   </section>
 
 </main>
