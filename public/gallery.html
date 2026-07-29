@@ -50,10 +50,13 @@
   border-radius: 12px;
   padding: 1.2rem;
   overflow: hidden;
-  display: inline-block;
+  width: 100%;
+  max-width: 760px;
+  box-sizing: border-box;
   margin: 2rem auto 0;
   box-shadow: 0 0 50px rgba(123, 47, 191, 0.5);
 }
+.fb-embed-wrap .fb-page, .fb-embed-wrap span, .fb-embed-wrap iframe { width: 100% !important; }
 .ig-banner {
   max-width: 1100px;
   margin: 2.5rem auto 0;
@@ -108,7 +111,6 @@
     <div class="fb-page"
       data-href="https://www.facebook.com/p/Regulators-MC-Palm-Bay-61567190639496/"
       data-tabs="timeline"
-      data-width="500"
       data-height="700"
       data-small-header="false"
       data-adapt-container-width="true"
@@ -224,6 +226,16 @@ document.getElementById('loginModal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('loginModal')) {
     closeLoginModal();
   }
+});
+
+let fbResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(fbResizeTimer);
+  fbResizeTimer = setTimeout(() => {
+    if (window.FB) {
+      window.FB.XFBML.parse(document.getElementById('fb-root').parentNode);
+    }
+  }, 300);
 });
 </script>
 
