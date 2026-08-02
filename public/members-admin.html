@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Tools — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+body { background: #0d0b10; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem; }
+.portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
+.back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
+.back-link:hover { color: #eeeef2; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input { width: 100%; padding: 0.7rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
+.success-text { color: #6fd36f; padding: 0.5rem 0; display: none; }
+.success-text.show { display: block; }
+.table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+.table th { text-align: left; color: #eeeef2; font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 0.85rem; padding: 0.6rem; border-bottom: 2px solid #4b1f7a; }
+.table td { padding: 0.6rem; border-bottom: 1px solid #2a1145; color: #c9c9d1; }
+.table select { background: #0d0b10; border: 1px solid #4b1f7a; color: #eeeef2; padding: 0.4rem; border-radius: 4px; }
+.loading-text { color: #b98ae8; padding: 1rem 0; }
+.denied { color: #ff6b5a; padding: 2rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <img src="assets/centerpiece.jpg" alt="Regulators MC logo">
+      <span>Regulators MC<small>Palm Bay, FL</small></span>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div id="deniedCard" class="portal-card" style="display:none;">
+    <div class="denied">Officer access required.</div>
+  </div>
+
+  <div id="adminContent" style="display:none;">
+    <div class="portal-card">
+      <h2>Create Member Account</h2>
+      <p style="color:#c9c9d1; margin-bottom:1rem;">New accounts start as a regular Member. Change their role below once created.</p>
+      <div id="createError" class="error-text"></div>
+      <div id="createSuccess" class="success-text"></div>
+      <form id="createForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="newEmail">Email</label>
+            <input id="newEmail" type="email" required />
+          </div>
+          <div class="form-group">
+            <label for="newName">Name</label>
+            <input id="newName" type="text" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="newPassword">Temporary Password</label>
+          <input id="newPassword" type="text" required minlength="6" />
+        </div>
+        <button type="submit" class="submit-btn" id="createSubmit">Create Account</button>
+      </form>
+    </div>
+
+    <div class="portal-card">
+      <h2>Manage Roles</h2>
+      <div id="roleError" class="error-text"></div>
+      <div id="membersTableWrap" class="loading-text">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentProfile = null;
+let currentSession = null;
+const ROLES = ['member', 'road-captain', 'treasurer', 'secretary', 'officer', 'master-admin'];
+
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  currentProfile = auth.profile;
+  currentSession = auth.session;
+
+  if (!isOfficerTier(currentProfile.role)) {
+    document.getElementById('deniedCard').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('adminContent').style.display = 'block';
+  await loadMembers();
+}
+
+document.getElementById('createForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('newEmail').value;
+  const name = document.getElementById('newName').value;
+  const password = document.getElementById('newPassword').value;
+  const errorDiv = document.getElementById('createError');
+  const successDiv = document.getElementById('createSuccess');
+  const submitBtn = document.getElementById('createSubmit');
+
+  errorDiv.classList.remove('show');
+  successDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating...';
+
+  try {
+    const res = await fetch('/api/admin/create-member', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + currentSession.access_token
+      },
+      body: JSON.stringify({ email, name, password })
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      errorDiv.textContent = data.error || 'Could not create account';
+      errorDiv.classList.add('show');
+      return;
+    }
+
+    successDiv.textContent = 'Account created for ' + email + '. Share the temporary password with them directly.';
+    successDiv.classList.add('show');
+    document.getElementById('createForm').reset();
+    await loadMembers();
+  } catch (err) {
+    errorDiv.textContent = 'Something went wrong. Please try again.';
+    errorDiv.classList.add('show');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Create Account';
+  }
+});
+
+async function loadMembers() {
+  const { data: members, error } = await sb
+    .from('profiles')
+    .select('*')
+    .order('name', { ascending: true });
+
+  const wrap = document.getElementById('membersTableWrap');
+  if (error) {
+    wrap.textContent = 'Could not load members.';
+    return;
+  }
+
+  const isMasterAdmin = currentProfile.role === 'master-admin';
+
+  wrap.innerHTML = `
+    <table class="table">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead>
+      <tbody>
+        ${members.map(m => `
+          <tr>
+            <td>${escapeHtml(m.name || '—')}</td>
+            <td>${escapeHtml(m.email)}</td>
+            <td>
+              ${isMasterAdmin
+                ? `<select onchange="changeRole('${m.id}', this.value)">
+                    ${ROLES.map(r => `<option value="${r}" ${r === m.role ? 'selected' : ''}>${roleLabel(r)}</option>`).join('')}
+                  </select>`
+                : roleLabel(m.role)}
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function changeRole(userId, newRole) {
+  const errorDiv = document.getElementById('roleError');
+  errorDiv.classList.remove('show');
+
+  const { error } = await sb.rpc('set_member_role', { target_id: userId, new_role: newRole });
+
+  if (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.add('show');
+    await loadMembers();
+    return;
+  }
+  await loadMembers();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+</script>
+
+</body>
+</html>

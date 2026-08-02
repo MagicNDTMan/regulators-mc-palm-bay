@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Private Events — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+body { background: #0d0b10; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem; }
+.portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
+.back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
+.back-link:hover { color: #eeeef2; }
+.event-item { padding: 1.2rem 0; border-bottom: 1px solid #4b1f7a; }
+.event-item:last-child { border-bottom: none; }
+.event-item h3 { color: #eeeef2; font-family: "Oswald", sans-serif; margin-bottom: 0.3rem; }
+.event-item .meta { color: #b98ae8; font-size: 0.9rem; margin-bottom: 0.4rem; }
+.event-item .desc { color: #c9c9d1; margin-bottom: 0.8rem; }
+.rsvp-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.rsvp-btn { padding: 0.4rem 1rem; border-radius: 4px; border: 1px solid #4b1f7a; background: #0d0b10; color: #c9c9d1; cursor: pointer; font-size: 0.85rem; }
+.rsvp-btn.active-going { background: #4bc04b; border-color: #4bc04b; color: #fff; }
+.rsvp-btn.active-maybe { background: #d4a72b; border-color: #d4a72b; color: #17131d; }
+.rsvp-btn.active-not_going { background: #d42b1e; border-color: #d42b1e; color: #fff; }
+.rsvp-summary { color: #b98ae8; font-size: 0.85rem; }
+.delete-btn { background: transparent; border: 1px solid #d42b1e; color: #ff6b5a; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-left: 0.5rem; }
+.delete-btn:hover { background: rgba(212,43,30,0.15); }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input, .form-group textarea { width: 100%; padding: 0.7rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.loading-text { color: #b98ae8; padding: 1rem 0; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <img src="assets/centerpiece.jpg" alt="Regulators MC logo">
+      <span>Regulators MC<small>Palm Bay, FL</small></span>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div class="portal-card" id="createCard" style="display:none;">
+    <h2>Create a Private Event</h2>
+    <div id="createError" class="error-text"></div>
+    <form id="createForm">
+      <div class="form-group">
+        <label for="evTitle">Title</label>
+        <input id="evTitle" type="text" required />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="evDate">Date</label>
+          <input id="evDate" type="date" required />
+        </div>
+        <div class="form-group">
+          <label for="evTime">Time</label>
+          <input id="evTime" type="text" placeholder="e.g. 7:00 PM" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="evLocation">Location</label>
+        <input id="evLocation" type="text" />
+      </div>
+      <div class="form-group">
+        <label for="evDescription">Description</label>
+        <textarea id="evDescription"></textarea>
+      </div>
+      <button type="submit" class="submit-btn" id="createSubmit">Create Event</button>
+    </form>
+  </div>
+
+  <div class="portal-card">
+    <h2>Upcoming Private Events</h2>
+    <div id="eventsList" class="loading-text">Loading...</div>
+  </div>
+</div>
+
+<script>
+let currentProfile = null;
+let allRsvps = [];
+
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  currentProfile = auth.profile;
+
+  if (isOfficerTier(currentProfile.role)) {
+    document.getElementById('createCard').style.display = 'block';
+  }
+
+  await loadEvents();
+}
+
+async function loadEvents() {
+  const [{ data: events, error: evError }, { data: rsvps, error: rsvpError }] = await Promise.all([
+    sb.from('private_events').select('*').order('event_date', { ascending: true }),
+    sb.from('rsvps').select('*')
+  ]);
+
+  const listDiv = document.getElementById('eventsList');
+  if (evError) {
+    listDiv.textContent = 'Could not load events.';
+    return;
+  }
+  allRsvps = rsvps || [];
+
+  if (!events || events.length === 0) {
+    listDiv.textContent = 'No private events scheduled.';
+    return;
+  }
+
+  const canManage = isOfficerTier(currentProfile.role);
+  listDiv.innerHTML = events.map(ev => {
+    const eventRsvps = allRsvps.filter(r => r.event_id === ev.id);
+    const goingCount = eventRsvps.filter(r => r.status === 'going').length;
+    const mine = eventRsvps.find(r => r.user_id === currentProfile.id);
+    const myStatus = mine ? mine.status : null;
+
+    return `
+      <div class="event-item">
+        <h3>${escapeHtml(ev.title)}</h3>
+        <div class="meta">${formatDate(ev.event_date)}${ev.event_time ? ' · ' + escapeHtml(ev.event_time) : ''}${ev.location ? ' · ' + escapeHtml(ev.location) : ''}</div>
+        ${ev.description ? `<div class="desc">${escapeHtml(ev.description)}</div>` : ''}
+        <div class="rsvp-buttons">
+          <button class="rsvp-btn ${myStatus === 'going' ? 'active-going' : ''}" onclick="setRsvp('${ev.id}','going')">Going</button>
+          <button class="rsvp-btn ${myStatus === 'maybe' ? 'active-maybe' : ''}" onclick="setRsvp('${ev.id}','maybe')">Maybe</button>
+          <button class="rsvp-btn ${myStatus === 'not_going' ? 'active-not_going' : ''}" onclick="setRsvp('${ev.id}','not_going')">Not Going</button>
+          ${canManage ? `<button class="delete-btn" onclick="deleteEvent('${ev.id}')">Delete Event</button>` : ''}
+        </div>
+        <div class="rsvp-summary">${goingCount} going</div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function setRsvp(eventId, status) {
+  const { error } = await sb.from('rsvps').upsert(
+    { event_id: eventId, user_id: currentProfile.id, status },
+    { onConflict: 'event_id,user_id' }
+  );
+  if (error) {
+    alert('Could not save RSVP: ' + error.message);
+    return;
+  }
+  await loadEvents();
+}
+
+document.getElementById('createForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = document.getElementById('evTitle').value;
+  const event_date = document.getElementById('evDate').value;
+  const event_time = document.getElementById('evTime').value;
+  const location = document.getElementById('evLocation').value;
+  const description = document.getElementById('evDescription').value;
+  const errorDiv = document.getElementById('createError');
+  const submitBtn = document.getElementById('createSubmit');
+
+  errorDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Creating...';
+
+  const { error } = await sb.from('private_events').insert([{
+    title, event_date, event_time, location, description, created_by: currentProfile.id
+  }]);
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Create Event';
+
+  if (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  document.getElementById('createForm').reset();
+  await loadEvents();
+});
+
+async function deleteEvent(id) {
+  if (!confirm('Delete this event? RSVPs will be removed too.')) return;
+  const { error } = await sb.from('private_events').delete().eq('id', id);
+  if (error) {
+    alert('Could not delete: ' + error.message);
+    return;
+  }
+  await loadEvents();
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+</script>
+
+</body>
+</html>

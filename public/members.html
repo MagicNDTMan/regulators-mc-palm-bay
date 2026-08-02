@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Members Portal — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
 <style>
 body { background: #0d0b10; }
 .container { max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem; }
@@ -17,6 +20,14 @@ body { background: #0d0b10; }
 .logout-btn:hover { background: #ff4433; }
 .user-info { color: #b98ae8; margin-bottom: 1.5rem; }
 .drive-embed { width: 100%; height: 500px; border: 1px solid #4b1f7a; border-radius: 4px; background: #fff; }
+.quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.quick-links a { padding: 1.2rem; background: #0d0b10; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 6px; text-decoration: none; color: #eeeef2; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; transition: all 0.2s; }
+.quick-links a:hover { border-color: #7b2fbf; background: #1f1a28; }
+.announcement-item { padding: 1rem 0; border-bottom: 1px solid #4b1f7a; }
+.announcement-item:last-child { border-bottom: none; }
+.announcement-item h3 { color: #eeeef2; font-family: "Oswald", sans-serif; margin-bottom: 0.3rem; }
+.announcement-item .meta { color: #b98ae8; font-size: 0.85rem; margin-bottom: 0.5rem; }
+.loading-text { color: #b98ae8; padding: 1rem 0; }
 </style>
 </head>
 <body>
@@ -33,7 +44,7 @@ body { background: #0d0b10; }
         <li><a href="events.html">Events</a></li>
         <li><a href="gallery.html">Gallery</a></li>
         <li><a href="contact.html">Contact</a></li>
-        <li><a href="#" onclick="logout()">Logout</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
       </ul>
     </nav>
   </div>
@@ -43,13 +54,27 @@ body { background: #0d0b10; }
   <div class="portal-card">
     <h2>Members Portal</h2>
     <div class="user-info" id="userInfo">Loading...</div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div style="display:flex; gap:0.6rem; align-items:center; margin-bottom:1rem; flex-wrap:wrap;">
+      <input id="nameInput" type="text" placeholder="Your display name" style="padding:0.5rem 0.7rem; background:#0d0b10; border:1px solid #4b1f7a; border-radius:4px; color:#eeeef2; font-family:inherit;" />
+      <button onclick="updateName()" style="padding:0.5rem 1rem; background:#7b2fbf; color:#fff; border:none; border-radius:4px; cursor:pointer; font-family:'Oswald',sans-serif; text-transform:uppercase; font-size:0.85rem;">Save Name</button>
+      <span id="nameSaved" style="color:#6fd36f; font-size:0.85rem; display:none;">Saved</span>
+    </div>
+    <button class="logout-btn" onclick="signOutAndRedirect()">Logout</button>
   </div>
 
   <div class="portal-card">
-    <h2>Welcome to the Regulators MC Members Area</h2>
-    <p>You are logged in as a member of the Regulators MC Palm Bay Chapter.</p>
-    <p style="margin-top: 1rem; color: #c9c9d1;">This is your exclusive members-only portal. Check back soon for member-only content, chapter meetings, and community updates.</p>
+    <h2>Quick Links</h2>
+    <div class="quick-links">
+      <a href="members-announcements.html">Announcements</a>
+      <a href="members-events.html">Private Events</a>
+      <a href="members-directory.html">Member Directory</a>
+      <a href="members-admin.html" id="adminLink" style="display:none;">Admin Tools</a>
+    </div>
+  </div>
+
+  <div class="portal-card">
+    <h2>Latest Announcements</h2>
+    <div id="announcementsPreview" class="loading-text">Loading...</div>
   </div>
 
   <div class="portal-card">
@@ -135,30 +160,78 @@ body { background: #0d0b10; }
 </div>
 
 <script>
-function logout() {
-  localStorage.removeItem('authToken');
-  window.location.href = 'index.html';
-}
+let currentProfile = null;
 
-function loadUserInfo() {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    window.location.href = 'index.html';
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  const { session, profile } = auth;
+  currentProfile = profile;
+
+  document.getElementById('userInfo').innerHTML = `
+    <strong>Name:</strong> ${escapeHtml(profile.name || session.user.email)}<br>
+    <strong>Email:</strong> ${escapeHtml(session.user.email)}<br>
+    <strong>Role:</strong> ${roleLabel(profile.role)}
+  `;
+  document.getElementById('nameInput').value = profile.name || '';
+
+  if (isOfficerTier(profile.role)) {
+    document.getElementById('adminLink').style.display = 'block';
+  }
+
+  const { data: announcements, error } = await sb
+    .from('announcements')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(3);
+
+  const previewDiv = document.getElementById('announcementsPreview');
+  if (error) {
+    previewDiv.textContent = 'Could not load announcements.';
     return;
   }
-
-  try {
-    const user = JSON.parse(token);
-    document.getElementById('userInfo').innerHTML = `
-      <strong>Email:</strong> ${user.email}<br>
-      <strong>Role:</strong> ${user.role === 'admin' ? 'Admin' : 'Member'}
-    `;
-  } catch (e) {
-    logout();
+  if (!announcements || announcements.length === 0) {
+    previewDiv.textContent = 'No announcements yet.';
+    return;
   }
+  previewDiv.innerHTML = announcements.map(a => `
+    <div class="announcement-item">
+      <h3>${escapeHtml(a.title)}</h3>
+      <div class="meta">${new Date(a.created_at).toLocaleDateString()}</div>
+      <p style="color:#c9c9d1;">${escapeHtml(a.body)}</p>
+    </div>
+  `).join('') + '<a href="members-announcements.html" style="display:inline-block; margin-top:0.8rem; color:#b98ae8;">View all announcements &rarr;</a>';
 }
 
-loadUserInfo();
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function updateName() {
+  const name = document.getElementById('nameInput').value.trim();
+  if (!name || !currentProfile) return;
+
+  const { error } = await sb.from('profiles').update({ name }).eq('id', currentProfile.id);
+  if (error) {
+    alert('Could not save name: ' + error.message);
+    return;
+  }
+  currentProfile.name = name;
+  const savedSpan = document.getElementById('nameSaved');
+  savedSpan.style.display = 'inline';
+  setTimeout(() => { savedSpan.style.display = 'none'; }, 2000);
+
+  const { data: { session } } = await sb.auth.getSession();
+  document.getElementById('userInfo').innerHTML = `
+    <strong>Name:</strong> ${escapeHtml(currentProfile.name)}<br>
+    <strong>Email:</strong> ${escapeHtml(session.user.email)}<br>
+    <strong>Role:</strong> ${roleLabel(currentProfile.role)}
+  `;
+}
+
+init();
 </script>
 
 </body>

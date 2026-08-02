@@ -9,6 +9,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
 <style>
 .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); }
 .modal.open { display: flex; justify-content: center; align-items: center; }
@@ -209,8 +211,15 @@
       <h2>Forgot Password</h2>
       <p>Regulators MC — Palm Bay, FL</p>
     </div>
-    <p style="color:#c9c9d1; line-height:1.6;">Password resets aren't automated yet. Email an officer at <a href="mailto:regulatorsmcpalmbay@gmail.com" style="color:#b98ae8;">regulatorsmcpalmbay@gmail.com</a> and they'll help you get back into your account.</p>
-    <button type="button" class="modal-submit" style="margin-top:1.2rem;" onclick="closeForgotPasswordModal()">Got It</button>
+    <div id="forgotError" class="modal-error"></div>
+    <div id="forgotSuccess" class="modal-success"></div>
+    <form class="modal-form" onsubmit="handleForgotPassword(event)">
+      <div class="modal-form-group">
+        <label for="forgotEmail">Email</label>
+        <input id="forgotEmail" type="email" required />
+      </div>
+      <button type="submit" class="modal-submit" id="forgotSubmit">Send Reset Link</button>
+    </form>
   </div>
 </div>
 
@@ -242,7 +251,11 @@ function togglePasswordVisibility() {
 
 function openForgotPasswordModal(e) {
   e.preventDefault();
+  const email = document.getElementById('loginEmail').value;
   closeLoginModal();
+  document.getElementById('forgotEmail').value = email;
+  document.getElementById('forgotError').classList.remove('show');
+  document.getElementById('forgotSuccess').classList.remove('show');
   document.getElementById('forgotPasswordModal').classList.add('open');
 }
 
@@ -250,7 +263,7 @@ function closeForgotPasswordModal() {
   document.getElementById('forgotPasswordModal').classList.remove('open');
 }
 
-function handleLogin(e) {
+async function handleLogin(e) {
   e.preventDefault();
   const email = document.getElementById('loginEmail').value;
   const password = document.getElementById('loginPassword').value;
@@ -263,33 +276,50 @@ function handleLogin(e) {
   submitBtn.disabled = true;
   submitBtn.textContent = 'Logging in...';
 
-  fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (!data.user) {
-      errorDiv.textContent = data.error || 'Login failed';
-      errorDiv.classList.add('show');
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Login';
-      return;
-    }
-    successDiv.textContent = 'Login successful! Redirecting...';
-    successDiv.classList.add('show');
-    localStorage.setItem('authToken', JSON.stringify(data.user));
-    setTimeout(() => {
-      window.location.href = 'members.html';
-    }, 500);
-  })
-  .catch(err => {
-    errorDiv.textContent = 'An error occurred. Please try again.';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    errorDiv.textContent = error.message === 'Invalid login credentials' ? 'Invalid email or password' : error.message;
     errorDiv.classList.add('show');
     submitBtn.disabled = false;
     submitBtn.textContent = 'Login';
+    return;
+  }
+
+  successDiv.textContent = 'Login successful! Redirecting...';
+  successDiv.classList.add('show');
+  setTimeout(() => {
+    window.location.href = 'members.html';
+  }, 500);
+}
+
+async function handleForgotPassword(e) {
+  e.preventDefault();
+  const email = document.getElementById('forgotEmail').value;
+  const errorDiv = document.getElementById('forgotError');
+  const successDiv = document.getElementById('forgotSuccess');
+  const submitBtn = document.getElementById('forgotSubmit');
+
+  errorDiv.classList.remove('show');
+  successDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Sending...';
+
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + '/reset-password.html'
   });
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Send Reset Link';
+
+  if (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  successDiv.textContent = 'If that email has an account, a reset link is on its way.';
+  successDiv.classList.add('show');
 }
 
 document.getElementById('loginModal').addEventListener('click', (e) => {

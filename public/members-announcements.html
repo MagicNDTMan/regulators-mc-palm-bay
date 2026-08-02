@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Announcements — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+body { background: #0d0b10; }
+.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem; }
+.portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
+.back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
+.back-link:hover { color: #eeeef2; }
+.announcement-item { padding: 1.2rem 0; border-bottom: 1px solid #4b1f7a; }
+.announcement-item:last-child { border-bottom: none; }
+.announcement-item h3 { color: #eeeef2; font-family: "Oswald", sans-serif; margin-bottom: 0.3rem; }
+.announcement-item .meta { color: #b98ae8; font-size: 0.85rem; margin-bottom: 0.5rem; }
+.announcement-item .body { color: #c9c9d1; white-space: pre-wrap; }
+.delete-btn { background: transparent; border: 1px solid #d42b1e; color: #ff6b5a; padding: 0.3rem 0.8rem; border-radius: 4px; font-size: 0.8rem; cursor: pointer; margin-top: 0.6rem; }
+.delete-btn:hover { background: rgba(212,43,30,0.15); }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input, .form-group textarea { width: 100%; padding: 0.7rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-group textarea { min-height: 100px; resize: vertical; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.loading-text { color: #b98ae8; padding: 1rem 0; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <img src="assets/centerpiece.jpg" alt="Regulators MC logo">
+      <span>Regulators MC<small>Palm Bay, FL</small></span>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div class="portal-card" id="postCard" style="display:none;">
+    <h2>Post an Announcement</h2>
+    <div id="postError" class="error-text"></div>
+    <form id="postForm">
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input id="title" type="text" required />
+      </div>
+      <div class="form-group">
+        <label for="body">Message</label>
+        <textarea id="body" required></textarea>
+      </div>
+      <button type="submit" class="submit-btn" id="postSubmit">Post</button>
+    </form>
+  </div>
+
+  <div class="portal-card">
+    <h2>Announcements</h2>
+    <div id="announcementsList" class="loading-text">Loading...</div>
+  </div>
+</div>
+
+<script>
+let currentProfile = null;
+
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  currentProfile = auth.profile;
+
+  if (isOfficerTier(currentProfile.role)) {
+    document.getElementById('postCard').style.display = 'block';
+  }
+
+  await loadAnnouncements();
+}
+
+async function loadAnnouncements() {
+  const { data: announcements, error } = await sb
+    .from('announcements')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  const listDiv = document.getElementById('announcementsList');
+  if (error) {
+    listDiv.textContent = 'Could not load announcements.';
+    return;
+  }
+  if (!announcements || announcements.length === 0) {
+    listDiv.textContent = 'No announcements yet.';
+    return;
+  }
+
+  const canManage = isOfficerTier(currentProfile.role);
+  listDiv.innerHTML = announcements.map(a => `
+    <div class="announcement-item">
+      <h3>${escapeHtml(a.title)}</h3>
+      <div class="meta">${new Date(a.created_at).toLocaleString()}</div>
+      <div class="body">${escapeHtml(a.body)}</div>
+      ${canManage ? `<button class="delete-btn" onclick="deleteAnnouncement('${a.id}')">Delete</button>` : ''}
+    </div>
+  `).join('');
+}
+
+document.getElementById('postForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const title = document.getElementById('title').value;
+  const body = document.getElementById('body').value;
+  const errorDiv = document.getElementById('postError');
+  const submitBtn = document.getElementById('postSubmit');
+
+  errorDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Posting...';
+
+  const { error } = await sb.from('announcements').insert([{
+    title, body, author_id: currentProfile.id
+  }]);
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Post';
+
+  if (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  document.getElementById('postForm').reset();
+  await loadAnnouncements();
+});
+
+async function deleteAnnouncement(id) {
+  if (!confirm('Delete this announcement?')) return;
+  const { error } = await sb.from('announcements').delete().eq('id', id);
+  if (error) {
+    alert('Could not delete: ' + error.message);
+    return;
+  }
+  await loadAnnouncements();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+</script>
+
+</body>
+</html>
