@@ -23,6 +23,11 @@
 .modal-form-group label { color: #c9c9d1; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
 .modal-form-group input { padding: 0.7rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s; }
 .modal-form-group input:focus { outline: none; border-color: #7b2fbf; box-shadow: 0 0 8px rgba(123, 47, 191, 0.3); }
+.password-wrap { position: relative; }
+.password-wrap input { width: 100%; padding-right: 2.6rem; }
+.password-toggle { position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0.2rem; color: #b98ae8; display: flex; align-items: center; }
+.password-toggle:hover { color: #eeeef2; }
+.password-toggle svg { width: 20px; height: 20px; }
 .modal-submit { padding: 0.8rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
 .modal-submit:hover { background: #9345d6; }
 .modal-submit:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -158,10 +163,31 @@
       </div>
       <div class="modal-form-group">
         <label for="loginPassword">Password</label>
-        <input id="loginPassword" type="password" required />
+        <div class="password-wrap">
+          <input id="loginPassword" type="password" required />
+          <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password">
+            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+        <a href="#" class="forgot-password-link" onclick="openForgotPasswordModal(event)" style="display:inline-block; margin-top:0.4rem; font-size:0.85rem; color:#b98ae8;">Forgot password?</a>
       </div>
       <button type="submit" class="modal-submit" id="loginSubmit">Login</button>
     </form>
+  </div>
+</div>
+
+<div id="forgotPasswordModal" class="modal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeForgotPasswordModal()">&times;</button>
+    <div class="modal-header">
+      <h2>Forgot Password</h2>
+      <p>Regulators MC — Palm Bay, FL</p>
+    </div>
+    <p style="color:#c9c9d1; line-height:1.6;">Password resets aren't automated yet. Email an officer at <a href="mailto:regulatorsmcpalmbay@gmail.com" style="color:#b98ae8;">regulatorsmcpalmbay@gmail.com</a> and they'll help you get back into your account.</p>
+    <button type="button" class="modal-submit" style="margin-top:1.2rem;" onclick="closeForgotPasswordModal()">Got It</button>
   </div>
 </div>
 
@@ -178,6 +204,27 @@ function closeLoginModal() {
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').classList.remove('show');
   document.getElementById('loginSuccess').classList.remove('show');
+}
+
+function togglePasswordVisibility() {
+  const input = document.getElementById('loginPassword');
+  const btn = document.querySelector('.password-toggle');
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+  document.getElementById('eyeIcon').innerHTML = isHidden
+    ? '<path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.24 4.24M9.9 4.24A10.9 10.9 0 0 1 12 4c7 0 10.5 8 10.5 8a17.8 17.8 0 0 1-3.06 4.06M6.5 6.6C3.4 8.5 1.5 12 1.5 12s3.5 7 10.5 7c1.4 0 2.7-.28 3.86-.76"/>'
+    : '<path d="M1.5 12S5 5 12 5s10.5 7 10.5 7-3.5 7-10.5 7S1.5 12 1.5 12Z"/><circle cx="12" cy="12" r="3"/>';
+}
+
+function openForgotPasswordModal(e) {
+  e.preventDefault();
+  closeLoginModal();
+  document.getElementById('forgotPasswordModal').classList.add('open');
+}
+
+function closeForgotPasswordModal() {
+  document.getElementById('forgotPasswordModal').classList.remove('open');
 }
 
 function handleLogin(e) {
@@ -225,6 +272,12 @@ function handleLogin(e) {
 document.getElementById('loginModal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('loginModal')) {
     closeLoginModal();
+  }
+});
+
+document.getElementById('forgotPasswordModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('forgotPasswordModal')) {
+    closeForgotPasswordModal();
   }
 });
 
