@@ -6,7 +6,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const OFFICER_ROLES = ['master-admin', 'officer', 'secretary', 'treasurer', 'road-captain'];
+const OFFICER_ROLES = ['master-admin', 'president', 'vice-president', 'sergeant-at-arms', 'officer', 'secretary', 'treasurer', 'road-captain'];
 
 function isOfficerTier(role) {
   return OFFICER_ROLES.includes(role);
@@ -15,6 +15,9 @@ function isOfficerTier(role) {
 function roleLabel(role) {
   const labels = {
     'master-admin': 'Master Admin',
+    'president': 'President',
+    'vice-president': 'Vice President',
+    'sergeant-at-arms': 'Sergeant at Arms',
     'officer': 'Officer',
     'secretary': 'Secretary',
     'treasurer': 'Treasurer',
