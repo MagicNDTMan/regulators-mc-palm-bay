@@ -35,6 +35,15 @@ body { background: #0d0b10; }
 .table select { background: #0d0b10; border: 1px solid #4b1f7a; color: #eeeef2; padding: 0.4rem; border-radius: 4px; }
 .loading-text { color: #b98ae8; padding: 1rem 0; }
 .denied { color: #ff6b5a; padding: 2rem; text-align: center; }
+.form-group select { width: 100%; padding: 0.7rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.table-scroll { overflow-x: auto; }
+.table-scroll .table { min-width: 900px; }
+.table input[type="text"] { width: 100%; min-width: 120px; padding: 0.4rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.flag-label { display: block; color: #c9c9d1; font-size: 0.8rem; white-space: nowrap; }
+.row-btn { padding: 0.35rem 0.7rem; font-size: 0.8rem; margin-right: 0.3rem; }
+.danger-btn { background: #d42b1e; }
+.danger-btn:hover { background: #ff4433; }
+.subhead { color: #eeeef2; font-family: "Oswald", sans-serif; margin-top: 2rem; margin-bottom: 0.8rem; }
 </style>
 </head>
 <body>
@@ -94,6 +103,43 @@ body { background: #0d0b10; }
       <div id="roleError" class="error-text"></div>
       <div id="membersTableWrap" class="loading-text">Loading...</div>
     </div>
+
+    <div class="portal-card">
+      <h2>Chapters &amp; Anniversaries</h2>
+      <p style="color:#c9c9d1; margin-bottom:1rem;">Drives both the Sister Chapters links and the Chapter Anniversaries grid on the members portal. Leave the Facebook URL blank for our own chapter — "Ours" is hidden from the links grid and highlighted in red on the anniversary grid.</p>
+      <div id="chapterError" class="error-text"></div>
+      <div id="chapterSuccess" class="success-text"></div>
+      <div id="chaptersWrap" class="loading-text">Loading...</div>
+
+      <h3 class="subhead">Add a Chapter</h3>
+      <form id="addChapterForm">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="chName">Chapter name</label>
+            <input id="chName" type="text" placeholder="City, ST" required />
+          </div>
+          <div class="form-group">
+            <label for="chUrl">Facebook URL</label>
+            <input id="chUrl" type="text" placeholder="https://www.facebook.com/..." />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="chType">Link type</label>
+            <select id="chType"></select>
+          </div>
+          <div class="form-group">
+            <label for="chMonth">Anniversary month</label>
+            <select id="chMonth"></select>
+          </div>
+          <div class="form-group">
+            <label for="chWeekend">Anniversary weekend</label>
+            <select id="chWeekend"></select>
+          </div>
+        </div>
+        <button type="submit" class="submit-btn" id="chSubmit">Add Chapter</button>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -114,7 +160,9 @@ async function init() {
   }
 
   document.getElementById('adminContent').style.display = 'block';
+  buildChapterFormOptions();
   await loadMembers();
+  await loadChapters();
 }
 
 document.getElementById('createForm').addEventListener('submit', async (e) => {
@@ -217,6 +265,175 @@ function escapeHtml(str) {
   div.textContent = str;
   return div.innerHTML;
 }
+
+/* ---- Chapters & anniversaries ---- */
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+const WEEKENDS = [[1, '1st weekend'], [2, '2nd weekend'], [3, '3rd weekend'],
+                  [4, '4th weekend'], [5, '5th weekend']];
+
+function monthOptions(selected) {
+  return '<option value="">—</option>' + MONTHS.map((m, i) =>
+    `<option value="${i + 1}" ${selected === i + 1 ? 'selected' : ''}>${m}</option>`).join('');
+}
+
+function weekendOptions(selected) {
+  return '<option value="">—</option>' + WEEKENDS.map(([v, label]) =>
+    `<option value="${v}" ${selected === v ? 'selected' : ''}>${label}</option>`).join('');
+}
+
+function typeOptions(selected) {
+  return ['page', 'group'].map(t =>
+    `<option value="${t}" ${selected === t ? 'selected' : ''}>Facebook ${t}</option>`).join('');
+}
+
+function buildChapterFormOptions() {
+  document.getElementById('chType').innerHTML = typeOptions('page');
+  document.getElementById('chMonth').innerHTML = monthOptions(null);
+  document.getElementById('chWeekend').innerHTML = weekendOptions(null);
+}
+
+function showChapterError(msg) {
+  const el = document.getElementById('chapterError');
+  el.textContent = msg;
+  el.classList.add('show');
+  document.getElementById('chapterSuccess').classList.remove('show');
+}
+
+function showChapterSuccess(msg) {
+  const el = document.getElementById('chapterSuccess');
+  el.textContent = msg;
+  el.classList.add('show');
+  document.getElementById('chapterError').classList.remove('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+async function loadChapters() {
+  const { data: chapters, error } = await sb
+    .from('chapters')
+    .select('*')
+    .order('name', { ascending: true });
+
+  const wrap = document.getElementById('chaptersWrap');
+  if (error) {
+    wrap.textContent = 'Could not load chapters.';
+    return;
+  }
+  wrap.classList.remove('loading-text');
+
+  if (!chapters.length) {
+    wrap.textContent = 'No chapters yet — add one below.';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <div class="table-scroll">
+      <table class="table">
+        <thead><tr>
+          <th>Chapter</th><th>Facebook URL</th><th>Link Type</th>
+          <th>Month</th><th>Weekend</th><th>Flags</th><th></th>
+        </tr></thead>
+        <tbody>
+          ${chapters.map(c => `
+            <tr data-id="${c.id}">
+              <td><input type="text" data-field="name" value="${escapeHtml(c.name)}" /></td>
+              <td><input type="text" data-field="facebook_url" value="${escapeHtml(c.facebook_url || '')}" /></td>
+              <td><select data-field="facebook_link_type">${typeOptions(c.facebook_link_type)}</select></td>
+              <td><select data-field="anniversary_month">${monthOptions(c.anniversary_month)}</select></td>
+              <td><select data-field="anniversary_weekend">${weekendOptions(c.anniversary_weekend)}</select></td>
+              <td>
+                <label class="flag-label"><input type="checkbox" data-field="is_ours" ${c.is_ours ? 'checked' : ''} /> Ours</label>
+                <label class="flag-label"><input type="checkbox" data-field="is_mother_chapter" ${c.is_mother_chapter ? 'checked' : ''} /> Mother Chapter</label>
+              </td>
+              <td style="white-space:nowrap;">
+                <button class="submit-btn row-btn" onclick="saveChapter('${c.id}')">Save</button>
+                <button class="submit-btn row-btn danger-btn" onclick="deleteChapter('${c.id}')">Delete</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function readChapterRow(id) {
+  const row = document.querySelector(`tr[data-id="${id}"]`);
+  const field = f => row.querySelector(`[data-field="${f}"]`);
+  const num = f => field(f).value ? Number(field(f).value) : null;
+  return {
+    name: field('name').value.trim(),
+    facebook_url: field('facebook_url').value.trim() || null,
+    facebook_link_type: field('facebook_link_type').value,
+    anniversary_month: num('anniversary_month'),
+    anniversary_weekend: num('anniversary_weekend'),
+    is_ours: field('is_ours').checked,
+    is_mother_chapter: field('is_mother_chapter').checked
+  };
+}
+
+async function saveChapter(id) {
+  const payload = readChapterRow(id);
+  if (!payload.name) {
+    showChapterError('Chapter name is required.');
+    return;
+  }
+  const { error } = await sb.from('chapters').update(payload).eq('id', id);
+  if (error) {
+    showChapterError(error.message);
+    return;
+  }
+  showChapterSuccess('Saved ' + payload.name + '.');
+  await loadChapters();
+}
+
+async function deleteChapter(id) {
+  const row = document.querySelector(`tr[data-id="${id}"]`);
+  const name = row.querySelector('[data-field="name"]').value.trim() || 'this chapter';
+  if (!confirm('Remove ' + name + ' from the chapter list? This removes it from both the Sister Chapters links and the anniversary grid.')) return;
+
+  const { error } = await sb.from('chapters').delete().eq('id', id);
+  if (error) {
+    showChapterError(error.message);
+    return;
+  }
+  showChapterSuccess('Removed ' + name + '.');
+  await loadChapters();
+}
+
+document.getElementById('addChapterForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const submitBtn = document.getElementById('chSubmit');
+  const monthVal = document.getElementById('chMonth').value;
+  const weekendVal = document.getElementById('chWeekend').value;
+  const payload = {
+    name: document.getElementById('chName').value.trim(),
+    facebook_url: document.getElementById('chUrl').value.trim() || null,
+    facebook_link_type: document.getElementById('chType').value,
+    anniversary_month: monthVal ? Number(monthVal) : null,
+    anniversary_weekend: weekendVal ? Number(weekendVal) : null
+  };
+  if (!payload.name) {
+    showChapterError('Chapter name is required.');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Adding...';
+  const { error } = await sb.from('chapters').insert(payload);
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Add Chapter';
+
+  if (error) {
+    showChapterError(error.message);
+    return;
+  }
+  showChapterSuccess('Added ' + payload.name + '.');
+  document.getElementById('addChapterForm').reset();
+  buildChapterFormOptions();
+  await loadChapters();
+});
 
 init();
 </script>
