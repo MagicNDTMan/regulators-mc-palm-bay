@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meeting Log — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+body { background: #0d0b10; }
+.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.2rem; }
+.portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
+.back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
+.back-link:hover { color: #eeeef2; }
+
+.filter-bar { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.filter-bar select { background: #0d0b10; border: 1px solid #4b1f7a; color: #eeeef2; padding: 0.5rem 0.8rem; border-radius: 4px; font-family: inherit; }
+
+.year-block { margin-bottom: 2rem; }
+.year-block:last-child { margin-bottom: 0; }
+.year-header { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 2px solid #4b1f7a; }
+.year-header h3 { color: #eeeef2; font-family: "Oswald", sans-serif; font-size: 1.4rem; letter-spacing: 0.06em; }
+.year-stats { color: #b98ae8; font-size: 0.85rem; display: flex; gap: 0.9rem; flex-wrap: wrap; }
+.year-stats span strong { color: #eeeef2; }
+
+.meeting-item { padding: 0.9rem 0; border-bottom: 1px solid #2a1145; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+.meeting-item:last-child { border-bottom: none; }
+.meeting-main { flex: 1; min-width: 220px; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.meeting-desc { color: #eeeef2; font-weight: 600; }
+.meeting-date { color: #b98ae8; font-size: 0.85rem; }
+.meeting-actions { display: flex; gap: 0.4rem; align-items: center; }
+
+.badge { display: inline-block; padding: 0.2rem 0.65rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.badge-type-Local { background: rgba(123,47,191,0.25); color: #c9a3e8; border: 1px solid #7b2fbf; }
+.badge-type-BFC { background: rgba(201,201,209,0.15); color: #c9c9d1; border: 1px solid #4b1f7a; }
+.badge-type-National { background: rgba(212,43,30,0.2); color: #ff8a7a; border: 1px solid #d42b1e; }
+.badge-type-Other { background: rgba(123,47,191,0.1); color: #b98ae8; border: 1px dashed #4b1f7a; }
+
+.badge-status-Approved { background: rgba(75,192,75,0.18); color: #6fd36f; border: 1px solid #4bc04b; }
+.badge-status-Missing { background: rgba(212,43,30,0.18); color: #ff6b5a; border: 1px solid #d42b1e; }
+.badge-status-InWork { background: rgba(212,167,43,0.18); color: #e8c96a; border: 1px solid #d4a72b; }
+.badge-status-Cancelled { background: rgba(120,120,130,0.15); color: #8a8a95; border: 1px solid #55555f; text-decoration: line-through; }
+.badge-status-Pending { background: rgba(123,47,191,0.08); color: #7a7a85; border: 1px dashed #4b1f7a; }
+
+.minutes-link { color: #b98ae8; font-size: 0.85rem; text-decoration: underline; }
+.icon-btn { background: none; border: 1px solid #4b1f7a; color: #c9c9d1; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.78rem; cursor: pointer; }
+.icon-btn:hover { border-color: #7b2fbf; color: #eeeef2; }
+.icon-btn.danger { border-color: #d42b1e; color: #ff6b5a; }
+.icon-btn.danger:hover { background: rgba(212,43,30,0.1); }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input, .form-group select { width: 100%; padding: 0.65rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.cancel-edit-btn { padding: 0.7rem 1.2rem; background: transparent; border: 1px solid #4b1f7a; color: #c9c9d1; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; margin-left: 0.6rem; }
+
+.loading-text { color: #b98ae8; padding: 1rem 0; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <img src="assets/centerpiece.jpg" alt="Regulators MC logo">
+      <span>Regulators MC<small>Palm Bay, FL</small></span>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div class="portal-card" id="formCard" style="display:none;">
+    <h2 id="formTitle">Log a Meeting</h2>
+    <div id="formError" class="error-text"></div>
+    <form id="meetingForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mYear">Year</label>
+          <input id="mYear" type="number" required min="2020" max="2100" />
+        </div>
+        <div class="form-group">
+          <label for="mMonth">Month</label>
+          <select id="mMonth" required>
+            <option value="JAN">January</option>
+            <option value="FEB">February</option>
+            <option value="MAR">March</option>
+            <option value="APR">April</option>
+            <option value="MAY">May</option>
+            <option value="JUN">June</option>
+            <option value="JUL">July</option>
+            <option value="AUG">August</option>
+            <option value="SEP">September</option>
+            <option value="OCT">October</option>
+            <option value="NOV">November</option>
+            <option value="DEC">December</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="mDate">Date (optional)</label>
+          <input id="mDate" type="date" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mType">Meeting Type</label>
+          <select id="mType" required>
+            <option value="Local">Local</option>
+            <option value="BFC">BFC</option>
+            <option value="National">National</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="mStatus">Minutes Status</label>
+          <select id="mStatus">
+            <option value="">— Not yet held —</option>
+            <option value="In Work">In Work</option>
+            <option value="Approved">Approved</option>
+            <option value="Missing">Missing</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="mDescription">Description</label>
+        <input id="mDescription" type="text" placeholder="e.g. Monthly Meeting" />
+      </div>
+      <div class="form-group">
+        <label for="mMinutesUrl">Link to Minutes (optional)</label>
+        <input id="mMinutesUrl" type="url" placeholder="https://..." />
+      </div>
+      <button type="submit" class="submit-btn" id="formSubmit">Save Meeting</button>
+      <button type="button" class="cancel-edit-btn" id="cancelEditBtn" style="display:none;" onclick="resetForm()">Cancel</button>
+    </form>
+  </div>
+
+  <div class="portal-card">
+    <h2>Meeting Log</h2>
+    <div class="filter-bar">
+      <select id="yearFilter" onchange="render()">
+        <option value="all">All Years</option>
+      </select>
+      <select id="typeFilter" onchange="render()">
+        <option value="all">All Types</option>
+        <option value="Local">Local</option>
+        <option value="BFC">BFC</option>
+        <option value="National">National</option>
+        <option value="Other">Other</option>
+      </select>
+      <select id="statusFilter" onchange="render()">
+        <option value="all">All Statuses</option>
+        <option value="Approved">Approved</option>
+        <option value="Missing">Missing</option>
+        <option value="In Work">In Work</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="pending">Not Yet Held</option>
+      </select>
+    </div>
+    <div id="logContainer" class="loading-text">Loading...</div>
+  </div>
+</div>
+
+<script>
+let currentProfile = null;
+let allMeetings = [];
+let editingId = null;
+
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  currentProfile = auth.profile;
+
+  if (isOfficerTier(currentProfile.role)) {
+    document.getElementById('formCard').style.display = 'block';
+  }
+
+  await loadMeetings();
+}
+
+async function loadMeetings() {
+  const { data, error } = await sb
+    .from('meeting_log')
+    .select('*')
+    .order('meeting_year', { ascending: false })
+    .order('meeting_date', { ascending: true, nullsFirst: false });
+
+  if (error) {
+    document.getElementById('logContainer').textContent = 'Could not load the meeting log.';
+    return;
+  }
+
+  allMeetings = data || [];
+  populateYearFilter();
+  render();
+}
+
+function populateYearFilter() {
+  const years = [...new Set(allMeetings.map(m => m.meeting_year))].sort((a, b) => b - a);
+  const select = document.getElementById('yearFilter');
+  const current = select.value;
+  select.innerHTML = '<option value="all">All Years</option>' +
+    years.map(y => `<option value="${y}">${y}</option>`).join('');
+  select.value = years.includes(Number(current)) ? current : 'all';
+}
+
+function render() {
+  const yearFilter = document.getElementById('yearFilter').value;
+  const typeFilter = document.getElementById('typeFilter').value;
+  const statusFilter = document.getElementById('statusFilter').value;
+
+  let filtered = allMeetings.filter(m => {
+    if (yearFilter !== 'all' && String(m.meeting_year) !== yearFilter) return false;
+    if (typeFilter !== 'all' && m.meeting_type !== typeFilter) return false;
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'pending') {
+        if (m.status) return false;
+      } else if (m.status !== statusFilter) return false;
+    }
+    return true;
+  });
+
+  const container = document.getElementById('logContainer');
+  if (filtered.length === 0) {
+    container.className = 'loading-text';
+    container.textContent = 'No meetings match those filters.';
+    return;
+  }
+
+  const byYear = {};
+  filtered.forEach(m => {
+    if (!byYear[m.meeting_year]) byYear[m.meeting_year] = [];
+    byYear[m.meeting_year].push(m);
+  });
+
+  const years = Object.keys(byYear).sort((a, b) => b - a);
+  const canManage = isOfficerTier(currentProfile.role);
+
+  container.className = '';
+  container.innerHTML = years.map(year => {
+    const meetings = byYear[year];
+    const stats = {
+      total: meetings.length,
+      approved: meetings.filter(m => m.status === 'Approved').length,
+      missing: meetings.filter(m => m.status === 'Missing').length,
+      inWork: meetings.filter(m => m.status === 'In Work').length,
+      cancelled: meetings.filter(m => m.status === 'Cancelled').length
+    };
+
+    return `
+      <div class="year-block">
+        <div class="year-header">
+          <h3>${year}</h3>
+          <div class="year-stats">
+            <span><strong>${stats.total}</strong> total</span>
+            <span><strong>${stats.approved}</strong> approved</span>
+            <span><strong>${stats.missing}</strong> missing</span>
+            <span><strong>${stats.inWork}</strong> in work</span>
+            ${stats.cancelled ? `<span><strong>${stats.cancelled}</strong> cancelled</span>` : ''}
+          </div>
+        </div>
+        ${meetings.map(m => renderMeetingItem(m, canManage)).join('')}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMeetingItem(m, canManage) {
+  const statusClass = m.status ? 'badge-status-' + m.status.replace(/\s+/g, '') : 'badge-status-Pending';
+  const statusLabel = m.status || 'Not Yet Held';
+  const dateLabel = m.meeting_date ? formatDate(m.meeting_date) : m.month_label;
+
+  return `
+    <div class="meeting-item">
+      <div class="meeting-main">
+        <span class="badge badge-type-${m.meeting_type}">${escapeHtml(m.meeting_type)}</span>
+        <span class="meeting-desc">${escapeHtml(m.description || '(no description)')}</span>
+        <span class="meeting-date">${escapeHtml(dateLabel)}</span>
+      </div>
+      <span class="badge ${statusClass}">${escapeHtml(statusLabel)}</span>
+      ${m.minutes_url ? `<a class="minutes-link" href="${escapeHtml(m.minutes_url)}" target="_blank" rel="noopener">View Minutes</a>` : ''}
+      ${canManage ? `
+        <div class="meeting-actions">
+          <button class="icon-btn" onclick='editMeeting(${JSON.stringify(m)})'>Edit</button>
+          <button class="icon-btn danger" onclick="deleteMeeting('${m.id}')">Delete</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+document.getElementById('meetingForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('formError');
+  const submitBtn = document.getElementById('formSubmit');
+
+  const payload = {
+    meeting_year: Number(document.getElementById('mYear').value),
+    month_label: document.getElementById('mMonth').value,
+    meeting_date: document.getElementById('mDate').value || null,
+    meeting_type: document.getElementById('mType').value,
+    description: document.getElementById('mDescription').value || null,
+    status: document.getElementById('mStatus').value || null,
+    minutes_url: document.getElementById('mMinutesUrl').value || null
+  };
+
+  errorDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  let result;
+  if (editingId) {
+    result = await sb.from('meeting_log').update(payload).eq('id', editingId);
+  } else {
+    payload.created_by = currentProfile.id;
+    result = await sb.from('meeting_log').insert([payload]);
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Save Meeting';
+
+  if (result.error) {
+    errorDiv.textContent = result.error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  resetForm();
+  await loadMeetings();
+});
+
+function editMeeting(m) {
+  editingId = m.id;
+  document.getElementById('formTitle').textContent = 'Edit Meeting';
+  document.getElementById('mYear').value = m.meeting_year;
+  document.getElementById('mMonth').value = m.month_label;
+  document.getElementById('mDate').value = m.meeting_date || '';
+  document.getElementById('mType').value = m.meeting_type;
+  document.getElementById('mStatus').value = m.status || '';
+  document.getElementById('mDescription').value = m.description || '';
+  document.getElementById('mMinutesUrl').value = m.minutes_url || '';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Log a Meeting';
+  document.getElementById('meetingForm').reset();
+  document.getElementById('cancelEditBtn').style.display = 'none';
+  document.getElementById('formError').classList.remove('show');
+}
+
+async function deleteMeeting(id) {
+  if (!confirm('Delete this meeting entry?')) return;
+  const { error } = await sb.from('meeting_log').delete().eq('id', id);
+  if (error) {
+    alert('Could not delete: ' + error.message);
+    return;
+  }
+  await loadMeetings();
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+</script>
+
+</body>
+</html>
