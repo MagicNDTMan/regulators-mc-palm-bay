@@ -88,6 +88,14 @@ body { background: #0d0b10; }
 .parse-notice.success { display: block; background: rgba(75,192,75,0.15); color: #6fd36f; border: 1px solid #4bc04b; }
 .parse-notice.warn { display: block; background: rgba(212,167,43,0.15); color: #e8c96a; border: 1px solid #d4a72b; }
 .form-divider { border: none; border-top: 1px solid #4b1f7a; margin: 0 0 1.2rem 0; }
+
+.photo-dropzone { border: 2px dashed #4b1f7a; border-radius: 8px; padding: 1.5rem; text-align: center; color: #b98ae8; font-size: 0.9rem; transition: all 0.15s ease; cursor: pointer; }
+.photo-dropzone.drag-over { border-color: #7b2fbf; background: rgba(123,47,191,0.1); color: #eeeef2; }
+.photo-browse-link { color: #eeeef2; text-decoration: underline; cursor: pointer; }
+.photo-previews { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
+.photo-preview { position: relative; width: 90px; height: 90px; border-radius: 6px; overflow: hidden; border: 1px solid #4b1f7a; }
+.photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-preview .remove-photo { position: absolute; top: 2px; right: 2px; background: rgba(13,11,16,0.85); color: #ff6b5a; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.8rem; line-height: 1; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -123,6 +131,15 @@ body { background: #0d0b10; }
         <textarea id="notesDropzone" rows="6" placeholder="6/8/25 Monthly Meeting&#10;&#10;Call meeting to order 1908...&#10;..."></textarea>
         <button type="button" class="submit-btn" style="margin-top:0.6rem;" onclick="parseNotes()">Fill In From Notes &#8595;</button>
         <div id="parseNotice" class="parse-notice"></div>
+
+        <p class="dropzone-hint" style="margin-top:1.2rem;">Or, if your notes are handwritten, drop photos of the pages here — up to 5 pages, in order — and we'll transcribe them into the box above automatically.</p>
+        <div id="photoDropzone" class="photo-dropzone">
+          Drag &amp; drop photos here, or <span class="photo-browse-link">browse files</span>
+          <input type="file" id="photoInput" accept="image/*" multiple style="display:none;" />
+        </div>
+        <div id="photoPreviews" class="photo-previews"></div>
+        <button type="button" class="submit-btn" id="transcribeBtn" style="margin-top:0.6rem; display:none;" onclick="transcribePhotos()">Transcribe Photos &#8595;</button>
+        <div id="transcribeNotice" class="parse-notice"></div>
       </div>
       <hr class="form-divider">
       <div class="form-row">
@@ -420,6 +437,9 @@ function resetForm() {
   document.getElementById('cancelEditBtn').style.display = 'none';
   document.getElementById('formError').classList.remove('show');
   document.getElementById('parseNotice').className = 'parse-notice';
+  document.getElementById('transcribeNotice').className = 'parse-notice';
+  selectedPhotos = [];
+  renderPhotoPreviews();
 }
 
 const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -471,6 +491,144 @@ function parseNotes() {
 document.getElementById('notesDropzone').addEventListener('paste', () => {
   setTimeout(parseNotes, 0);
 });
+
+const MAX_PHOTOS = 5;
+let selectedPhotos = [];
+
+function resizeImageFile(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Could not load image'));
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round(height * (maxDim / width));
+            width = maxDim;
+          } else {
+            width = Math.round(width * (maxDim / height));
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function addPhotos(fileList) {
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  const remainingSlots = MAX_PHOTOS - selectedPhotos.length;
+  if (remainingSlots <= 0) return;
+
+  for (const file of files.slice(0, remainingSlots)) {
+    try {
+      const dataUrl = await resizeImageFile(file, 1600);
+      selectedPhotos.push(dataUrl);
+    } catch (err) {
+      console.error('Could not process image:', err);
+    }
+  }
+  renderPhotoPreviews();
+}
+
+function removePhoto(index) {
+  selectedPhotos.splice(index, 1);
+  renderPhotoPreviews();
+}
+
+function renderPhotoPreviews() {
+  const wrap = document.getElementById('photoPreviews');
+  wrap.innerHTML = selectedPhotos.map((dataUrl, i) => `
+    <div class="photo-preview">
+      <img src="${dataUrl}" alt="Note page ${i + 1}" />
+      <button type="button" class="remove-photo" onclick="removePhoto(${i})">&times;</button>
+    </div>
+  `).join('');
+  document.getElementById('transcribeBtn').style.display = selectedPhotos.length > 0 ? 'inline-block' : 'none';
+}
+
+const photoDropzoneEl = document.getElementById('photoDropzone');
+const photoInputEl = document.getElementById('photoInput');
+
+photoDropzoneEl.addEventListener('click', () => photoInputEl.click());
+photoDropzoneEl.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  photoDropzoneEl.classList.add('drag-over');
+});
+photoDropzoneEl.addEventListener('dragleave', () => {
+  photoDropzoneEl.classList.remove('drag-over');
+});
+photoDropzoneEl.addEventListener('drop', (e) => {
+  e.preventDefault();
+  photoDropzoneEl.classList.remove('drag-over');
+  addPhotos(e.dataTransfer.files);
+});
+photoInputEl.addEventListener('change', () => {
+  addPhotos(photoInputEl.files);
+  photoInputEl.value = '';
+});
+
+async function transcribePhotos() {
+  if (selectedPhotos.length === 0) return;
+  const noticeDiv = document.getElementById('transcribeNotice');
+  const btn = document.getElementById('transcribeBtn');
+
+  noticeDiv.className = 'parse-notice';
+  btn.disabled = true;
+  btn.textContent = 'Transcribing... (this can take a few seconds)';
+
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const images = selectedPhotos.map(dataUrl => {
+      const [header, base64] = dataUrl.split(',');
+      const mediaType = header.match(/data:(.*?);base64/)[1];
+      return { data: base64, mediaType };
+    });
+
+    const res = await fetch('/api/admin/transcribe-notes', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token
+      },
+      body: JSON.stringify({ images })
+    });
+    const result = await res.json();
+
+    if (!res.ok) {
+      noticeDiv.textContent = result.error || 'Transcription failed.';
+      noticeDiv.className = 'parse-notice warn';
+      return;
+    }
+
+    const notesBox = document.getElementById('notesDropzone');
+    notesBox.value = notesBox.value.trim()
+      ? notesBox.value.trim() + '\n\n' + result.text
+      : result.text;
+
+    selectedPhotos = [];
+    renderPhotoPreviews();
+    noticeDiv.textContent = 'Transcribed! Filling in the fields below...';
+    noticeDiv.className = 'parse-notice success';
+    parseNotes();
+  } catch (err) {
+    noticeDiv.textContent = 'Something went wrong reaching the transcription service.';
+    noticeDiv.className = 'parse-notice warn';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Transcribe Photos ↓';
+  }
+}
 
 async function deleteMeeting(id) {
   if (!confirm('Delete this meeting entry?')) return;
