@@ -80,6 +80,14 @@ body { background: #0d0b10; }
 .loading-text { color: #b98ae8; padding: 1rem 0; }
 .error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
 .error-text.show { display: block; }
+
+.dropzone-group { background: rgba(123,47,191,0.06); border: 1px dashed #4b1f7a; border-radius: 8px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
+.dropzone-hint { color: #b98ae8; font-size: 0.85rem; margin-bottom: 0.6rem; line-height: 1.5; }
+.dropzone-hint code { background: #0d0b10; padding: 0.1rem 0.4rem; border-radius: 3px; color: #eeeef2; }
+.parse-notice { font-size: 0.85rem; margin-top: 0.6rem; padding: 0.5rem 0.7rem; border-radius: 4px; display: none; }
+.parse-notice.success { display: block; background: rgba(75,192,75,0.15); color: #6fd36f; border: 1px solid #4bc04b; }
+.parse-notice.warn { display: block; background: rgba(212,167,43,0.15); color: #e8c96a; border: 1px solid #d4a72b; }
+.form-divider { border: none; border-top: 1px solid #4b1f7a; margin: 0 0 1.2rem 0; }
 </style>
 </head>
 <body>
@@ -109,6 +117,14 @@ body { background: #0d0b10; }
     <h2 id="formTitle">Log a Meeting</h2>
     <div id="formError" class="error-text"></div>
     <form id="meetingForm">
+      <div class="dropzone-group">
+        <label for="notesDropzone">Drop In Your Notes</label>
+        <p class="dropzone-hint">Paste your raw notes below, starting the first line with the date and a short title — like <code>6/8/25 Monthly Meeting</code>. Everything after that line becomes the minutes. Click "Fill In From Notes" and we'll auto-fill the date and description for you below; just confirm the Meeting Type and hit Save.</p>
+        <textarea id="notesDropzone" rows="6" placeholder="6/8/25 Monthly Meeting&#10;&#10;Call meeting to order 1908...&#10;..."></textarea>
+        <button type="button" class="submit-btn" style="margin-top:0.6rem;" onclick="parseNotes()">Fill In From Notes &#8595;</button>
+        <div id="parseNotice" class="parse-notice"></div>
+      </div>
+      <hr class="form-divider">
       <div class="form-row">
         <div class="form-group">
           <label for="mYear">Year</label>
@@ -403,7 +419,58 @@ function resetForm() {
   document.getElementById('meetingForm').reset();
   document.getElementById('cancelEditBtn').style.display = 'none';
   document.getElementById('formError').classList.remove('show');
+  document.getElementById('parseNotice').className = 'parse-notice';
 }
+
+const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+function parseNotes() {
+  const raw = document.getElementById('notesDropzone').value;
+  const noticeDiv = document.getElementById('parseNotice');
+  const lines = raw.split('\n');
+  const firstLineIdx = lines.findIndex(l => l.trim() !== '');
+
+  if (firstLineIdx === -1) {
+    noticeDiv.textContent = 'Paste your notes in the box above first.';
+    noticeDiv.className = 'parse-notice warn';
+    return;
+  }
+
+  const firstLine = lines[firstLineIdx].trim();
+  const match = firstLine.match(/^#{0,3}\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(.+)$/);
+
+  if (match) {
+    let [, mo, day, yr, desc] = match;
+    mo = parseInt(mo, 10);
+    day = parseInt(day, 10);
+    yr = parseInt(yr, 10);
+    if (yr < 100) yr += 2000;
+
+    document.getElementById('mYear').value = yr;
+    document.getElementById('mMonth').value = MONTH_NAMES[mo - 1] || 'JAN';
+    document.getElementById('mDate').value = `${yr}-${String(mo).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    document.getElementById('mDescription').value = desc.replace(/^#+\s*/, '').trim();
+    if (!document.getElementById('mStatus').value) {
+      document.getElementById('mStatus').value = 'In Work';
+    }
+
+    const remainder = lines.slice(firstLineIdx + 1).join('\n').trim();
+    document.getElementById('mMinutesText').value = remainder || raw.trim();
+
+    noticeDiv.textContent = 'Date and description filled in below — confirm the Meeting Type, then Save.';
+    noticeDiv.className = 'parse-notice success';
+  } else {
+    document.getElementById('mMinutesText').value = raw.trim();
+    noticeDiv.textContent = 'Could not find a date on the first line (expected something like "6/8/25 Monthly Meeting") — your notes were dropped into Minutes Text below. Fill in the date and description by hand.';
+    noticeDiv.className = 'parse-notice warn';
+  }
+
+  document.getElementById('mYear').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+document.getElementById('notesDropzone').addEventListener('paste', () => {
+  setTimeout(parseNotes, 0);
+});
 
 async function deleteMeeting(id) {
   if (!confirm('Delete this meeting entry?')) return;
