@@ -22,12 +22,17 @@ body { background: #0d0b10; }
 .filter-bar { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
 .filter-bar select { background: #0d0b10; border: 1px solid #4b1f7a; color: #eeeef2; padding: 0.5rem 0.8rem; border-radius: 4px; font-family: inherit; }
 
-.year-block { margin-bottom: 2rem; }
+.year-block { margin-bottom: 1.2rem; }
 .year-block:last-child { margin-bottom: 0; }
-.year-header { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 2px solid #4b1f7a; }
+.year-header { display: flex; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 0; padding-bottom: 0.6rem; border-bottom: 2px solid #4b1f7a; cursor: pointer; list-style: none; user-select: none; }
+.year-header::-webkit-details-marker { display: none; }
+.year-header::marker { content: ""; }
+.year-header .year-arrow { color: #7b2fbf; font-size: 1.1rem; transition: transform 0.15s ease; flex-shrink: 0; }
+.year-block[open] > .year-header .year-arrow { transform: rotate(90deg); }
 .year-header h3 { color: #eeeef2; font-family: "Oswald", sans-serif; font-size: 1.4rem; letter-spacing: 0.06em; }
 .year-stats { color: #b98ae8; font-size: 0.85rem; display: flex; gap: 0.9rem; flex-wrap: wrap; }
 .year-stats span strong { color: #eeeef2; }
+.year-items { padding-top: 1rem; }
 
 .meeting-item { padding: 0.9rem 0; border-bottom: 1px solid #2a1145; display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
 .meeting-item:last-child { border-bottom: none; }
@@ -257,7 +262,7 @@ function render() {
   const canManage = isOfficerTier(currentProfile.role);
 
   container.className = '';
-  container.innerHTML = years.map(year => {
+  container.innerHTML = years.map((year, index) => {
     const meetings = byYear[year];
     const stats = {
       total: meetings.length,
@@ -268,8 +273,9 @@ function render() {
     };
 
     return `
-      <div class="year-block">
-        <div class="year-header">
+      <details class="year-block" ${index === 0 ? 'open' : ''}>
+        <summary class="year-header">
+          <span class="year-arrow">&#9656;</span>
           <h3>${year}</h3>
           <div class="year-stats">
             <span><strong>${stats.total}</strong> total</span>
@@ -278,9 +284,11 @@ function render() {
             <span><strong>${stats.inWork}</strong> in work</span>
             ${stats.cancelled ? `<span><strong>${stats.cancelled}</strong> cancelled</span>` : ''}
           </div>
+        </summary>
+        <div class="year-items">
+          ${meetings.map(m => renderMeetingItem(m, canManage)).join('')}
         </div>
-        ${meetings.map(m => renderMeetingItem(m, canManage)).join('')}
-      </div>
+      </details>
     `;
   }).join('');
 }
