@@ -34,6 +34,9 @@ body { background: #0d0b10; }
 .chapter-link strong { color: #eeeef2; display: block; }
 .chapter-link .fb-label { display: block; font-size: 0.85rem; color: #b98ae8; margin-top: 0.3rem; }
 .chapter-link .chapter-note { font-size: 0.9rem; margin: 0.4rem 0 0 0; }
+.chapter-link.is-ours { border-color: #d42b1e; }
+.chapter-link.is-ours:hover { border-color: #ff4433; }
+.chapter-link .chapter-note.ours { color: #d42b1e; font-weight: 600; }
 .anni-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
 .anni-card { padding: 1rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; }
 .anni-card .anni-month { color: #7b2fbf; font-size: 1.1rem; }
@@ -92,8 +95,8 @@ body { background: #0d0b10; }
   </div>
 
   <div class="portal-card">
-    <h2>Sister Chapters on Facebook</h2>
-    <p style="color: #c9c9d1; margin-bottom: 1.5rem;">Regulators MC chapters across the country. Each one opens that chapter's Facebook page in a new tab — look them up when you're riding through.</p>
+    <h2>Chapters on Facebook</h2>
+    <p style="color: #c9c9d1; margin-bottom: 1.5rem;">Our page plus Regulators MC chapters across the country. Each one opens that chapter's Facebook page in a new tab — look them up when you're riding through.</p>
     <svg width="0" height="0" style="position:absolute;" aria-hidden="true" focusable="false">
       <symbol id="fb-glyph" viewBox="0 0 24 24">
         <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -188,7 +191,7 @@ async function loadChapters() {
     return;
   }
 
-  renderChapterLinks(chapters.filter(c => !c.is_ours && safeUrl(c.facebook_url)), linksDiv);
+  renderChapterLinks(chapters.filter(c => safeUrl(c.facebook_url)), linksDiv);
   renderAnniversaries(chapters.filter(c => c.anniversary_month), anniDiv);
 }
 
@@ -198,12 +201,16 @@ function renderChapterLinks(list, el) {
     el.textContent = 'No sister chapters listed yet.';
     return;
   }
-  const sorted = list.slice().sort((a, b) => a.name.localeCompare(b.name));
+  // Our own chapter leads the grid; sister chapters follow alphabetically.
+  const sorted = list.slice().sort((a, b) =>
+    (b.is_ours ? 1 : 0) - (a.is_ours ? 1 : 0) || a.name.localeCompare(b.name)
+  );
   el.innerHTML = '<div class="chapter-grid">' + sorted.map(c => `
-    <a class="chapter-link" href="${escapeHtml(safeUrl(c.facebook_url))}" target="_blank" rel="noopener">
+    <a class="chapter-link${c.is_ours ? ' is-ours' : ''}" href="${escapeHtml(safeUrl(c.facebook_url))}" target="_blank" rel="noopener">
       <svg class="fb-icon" aria-hidden="true" focusable="false"><use href="#fb-glyph"/></svg>
       <span>
         <strong>${escapeHtml(c.name)}</strong>
+        ${c.is_ours ? '<p class="chapter-note ours">Our Chapter</p>' : ''}
         ${c.is_mother_chapter ? '<p class="chapter-note">Mother Chapter</p>' : ''}
         <span class="fb-label">Facebook ${c.facebook_link_type === 'group' ? 'group' : 'page'}</span>
       </span>
