@@ -19,9 +19,14 @@ body { background: #0d0b10; }
 .logout-btn { background: #d42b1e; color: white; padding: 0.7rem 1.5rem; border: none; border-radius: 4px; cursor: pointer; font-family: "Oswald", sans-serif; text-transform: uppercase; }
 .logout-btn:hover { background: #ff4433; }
 .user-info { color: #b98ae8; margin-bottom: 1.5rem; }
-.quick-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
-.quick-links a { padding: 1.2rem; background: #0d0b10; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 6px; text-decoration: none; color: #eeeef2; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; text-align: center; transition: all 0.2s; }
-.quick-links a:hover { border-color: #7b2fbf; background: #1f1a28; }
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.dashboard-card { display: flex; flex-direction: column; gap: 0.4rem; padding: 1.4rem; background: #0d0b10; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; text-decoration: none; color: #eeeef2; transition: all 0.2s; }
+.dashboard-card:hover { border-color: #7b2fbf; background: #1f1a28; transform: translateY(-2px); }
+.dashboard-card.is-admin { border-top-color: #d42b1e; }
+.dashboard-card.is-admin:hover { border-color: #d42b1e; }
+.dashboard-card .card-icon { font-size: 1.8rem; line-height: 1; }
+.dashboard-card .card-title { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.05em; font-size: 1rem; color: #eeeef2; }
+.dashboard-card .card-desc { color: #9c9ca6; font-size: 0.85rem; line-height: 1.4; }
 .announcement-item { padding: 1rem 0; border-bottom: 1px solid #4b1f7a; }
 .announcement-item:last-child { border-bottom: none; }
 .announcement-item h3 { color: #eeeef2; font-family: "Oswald", sans-serif; margin-bottom: 0.3rem; }
@@ -79,17 +84,53 @@ body { background: #0d0b10; }
   </div>
 
   <div class="portal-card">
-    <h2>Quick Links</h2>
-    <div class="quick-links">
-      <a href="members-announcements.html">Announcements</a>
-      <a href="members-events.html">Private Events</a>
-      <a href="members-calendar.html">Club Calendar</a>
-      <a href="members-directory.html">Member Directory</a>
-      <a href="members-meeting-log.html">Meeting Log</a>
-      <a href="members-treasurer.html">Treasurer Report</a>
-      <a href="members-reimbursements.html">Reimbursements</a>
-      <a href="members-mileage.html">Mileage Tracker</a>
-      <a href="members-admin.html" id="adminLink" style="display:none;">Admin Tools</a>
+    <h2>Dashboard</h2>
+    <div class="dashboard-grid">
+      <a class="dashboard-card" href="members-announcements.html">
+        <span class="card-icon">📢</span>
+        <span class="card-title">Announcements</span>
+        <span class="card-desc">Club-wide updates and news</span>
+      </a>
+      <a class="dashboard-card" href="members-events.html">
+        <span class="card-icon">🎉</span>
+        <span class="card-title">Private Events</span>
+        <span class="card-desc">RSVP to upcoming rides and events</span>
+      </a>
+      <a class="dashboard-card" href="members-calendar.html">
+        <span class="card-icon">📅</span>
+        <span class="card-title">Club Calendar</span>
+        <span class="card-desc">Shared club schedule</span>
+      </a>
+      <a class="dashboard-card" href="members-directory.html">
+        <span class="card-icon">👥</span>
+        <span class="card-title">Member Directory</span>
+        <span class="card-desc">Roster, contact info, and status</span>
+      </a>
+      <a class="dashboard-card" href="members-meeting-log.html">
+        <span class="card-icon">📝</span>
+        <span class="card-title">Meeting Log</span>
+        <span class="card-desc">Minutes from past chapter meetings</span>
+      </a>
+      <a class="dashboard-card" href="members-treasurer.html">
+        <span class="card-icon">💰</span>
+        <span class="card-title">Treasurer Report</span>
+        <span class="card-desc">Chapter finances by fiscal year</span>
+      </a>
+      <a class="dashboard-card" href="members-reimbursements.html">
+        <span class="card-icon">🧾</span>
+        <span class="card-title">Reimbursements</span>
+        <span class="card-desc">Submit and track expense requests</span>
+      </a>
+      <a class="dashboard-card" href="members-mileage.html">
+        <span class="card-icon">🏍️</span>
+        <span class="card-title">Mileage Tracker</span>
+        <span class="card-desc">Bike mileage leaderboard</span>
+      </a>
+      <a class="dashboard-card is-admin" href="members-admin.html" id="adminLink" style="display:none;">
+        <span class="card-icon">🛠️</span>
+        <span class="card-title">Admin Tools</span>
+        <span class="card-desc">Officer-only management tools</span>
+      </a>
     </div>
   </div>
 
@@ -133,7 +174,7 @@ async function init() {
   document.getElementById('nameInput').value = profile.name || '';
 
   if (isOfficerTier(profile.role)) {
-    document.getElementById('adminLink').style.display = 'block';
+    document.getElementById('adminLink').style.display = 'flex';
   }
 
   // Not awaited: the announcements block below returns early on empty/error,
