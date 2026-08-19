@@ -13,17 +13,51 @@
 <script src="js/supabase-client.js"></script>
 <style>
 body { background: #0d0b10; }
-.container { max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem; }
+.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.2rem; }
 .portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
 .portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
 .back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
 .back-link:hover { color: #eeeef2; }
-.directory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
-.member-card { background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 6px; padding: 1.2rem; }
-.member-card .name { color: #eeeef2; font-family: "Oswald", sans-serif; font-size: 1.05rem; margin-bottom: 0.3rem; }
-.member-card .role { color: #7b2fbf; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
-.member-card .email { color: #c9c9d1; font-size: 0.85rem; word-break: break-all; }
+
+.filter-bar { display: flex; gap: 0.6rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.filter-tab { padding: 0.4rem 1rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 999px; color: #c9c9d1; cursor: pointer; font-family: "Oswald", sans-serif; letter-spacing: 0.04em; font-size: 0.85rem; }
+.filter-tab.active { background: #7b2fbf; border-color: #7b2fbf; color: #fff; }
+
+.directory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
+.member-card { background: #0d0b10; border: 1px solid #4b1f7a; border-top: 3px solid #4b1f7a; border-radius: 6px; padding: 1.2rem; }
+.member-card.is-officer { border-top-color: #7b2fbf; }
+.member-card .position-badge { display: inline-block; background: rgba(123,47,191,0.2); color: #c9a3e8; border: 1px solid #7b2fbf; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem; }
+.member-card .riding-name { color: #eeeef2; font-family: "Oswald", sans-serif; font-size: 1.15rem; margin-bottom: 0.15rem; }
+.member-card .legal-name { color: #7a7a85; font-size: 0.85rem; margin-bottom: 0.7rem; }
+.member-card .detail-row { color: #c9c9d1; font-size: 0.85rem; margin-bottom: 0.3rem; }
+.member-card .detail-row a { color: #c9c9d1; text-decoration: none; }
+.member-card .detail-row a:hover { color: #b98ae8; }
+.member-card .since { color: #b98ae8; font-size: 0.8rem; margin-top: 0.6rem; }
+.member-card .card-actions { margin-top: 0.8rem; display: flex; gap: 0.4rem; }
+
+.former-list { display: flex; flex-direction: column; gap: 0; }
+.former-row { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0; border-bottom: 1px solid #2a1145; flex-wrap: wrap; gap: 0.5rem; }
+.former-row:last-child { border-bottom: none; }
+.former-row .riding-name { color: #eeeef2; font-family: "Oswald", sans-serif; }
+.former-row .legal-name { color: #7a7a85; font-size: 0.85rem; margin-left: 0.5rem; }
+.former-row .years { color: #7a7a85; font-size: 0.85rem; }
+
+.icon-btn { background: none; border: 1px solid #4b1f7a; color: #c9c9d1; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+.icon-btn:hover { border-color: #7b2fbf; color: #eeeef2; }
+.icon-btn.danger { border-color: #d42b1e; color: #ff6b5a; }
+.icon-btn.danger:hover { background: rgba(212,43,30,0.1); }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input, .form-group select { width: 100%; padding: 0.65rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.cancel-edit-btn { padding: 0.7rem 1.2rem; background: transparent; border: 1px solid #4b1f7a; color: #c9c9d1; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; margin-left: 0.6rem; }
+
 .loading-text { color: #b98ae8; padding: 1rem 0; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
 </style>
 </head>
 <body>
@@ -48,40 +82,262 @@ body { background: #0d0b10; }
 
 <div class="container">
   <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div class="portal-card" id="formCard" style="display:none;">
+    <h2 id="formTitle">Add a Member</h2>
+    <div id="formError" class="error-text"></div>
+    <form id="memberForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mPosition">Position (officers only)</label>
+          <select id="mPosition">
+            <option value="">— Member —</option>
+            <option value="President">President</option>
+            <option value="Vice President">Vice President</option>
+            <option value="Secretary">Secretary</option>
+            <option value="Treasurer">Treasurer</option>
+            <option value="SAA">Sergeant at Arms</option>
+            <option value="Road Captain">Road Captain</option>
+            <option value="PRO">PRO</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="mStatus">Status</label>
+          <select id="mStatus">
+            <option value="active">Active</option>
+            <option value="former">Former</option>
+          </select>
+        </div>
+        <div class="form-group" id="statusYearGroup" style="display:none;">
+          <label for="mStatusYear">Year Left</label>
+          <input id="mStatusYear" type="number" min="2000" max="2100" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mRidingName">Riding Name</label>
+          <input id="mRidingName" type="text" required />
+        </div>
+        <div class="form-group">
+          <label for="mLegalName">Legal Name</label>
+          <input id="mLegalName" type="text" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mPhone">Phone</label>
+          <input id="mPhone" type="tel" placeholder="555-555-5555" />
+        </div>
+        <div class="form-group">
+          <label for="mEmail">Email</label>
+          <input id="mEmail" type="email" />
+        </div>
+        <div class="form-group">
+          <label for="mBirthday">Birthday</label>
+          <input id="mBirthday" type="text" placeholder="e.g. Aug 13" />
+        </div>
+        <div class="form-group">
+          <label for="mColorsYear">Colors Year</label>
+          <input id="mColorsYear" type="number" min="2000" max="2100" />
+        </div>
+      </div>
+      <button type="submit" class="submit-btn" id="mSubmit">Save Member</button>
+      <button type="button" class="cancel-edit-btn" id="mCancelBtn" style="display:none;" onclick="resetMemberForm()">Cancel</button>
+    </form>
+  </div>
+
   <div class="portal-card">
     <h2>Member Directory</h2>
+    <div class="filter-bar">
+      <div class="filter-tab active" data-filter="active" onclick="setFilter('active')">Active</div>
+      <div class="filter-tab" data-filter="former" onclick="setFilter('former')">Former</div>
+    </div>
     <div id="directoryList" class="loading-text">Loading...</div>
   </div>
 </div>
 
 <script>
+const POSITION_WEIGHT = { 'President': 0, 'Vice President': 1, 'Secretary': 2, 'Treasurer': 3, 'SAA': 4, 'Road Captain': 5, 'PRO': 6 };
+let currentProfile = null;
+let allMembers = [];
+let activeFilter = 'active';
+let editingId = null;
+
 async function init() {
   const auth = await requireAuth();
   if (!auth) return;
+  currentProfile = auth.profile;
 
-  const { data: members, error } = await sb
-    .from('profiles')
-    .select('*')
-    .order('name', { ascending: true });
+  if (isOfficerTier(currentProfile.role)) {
+    document.getElementById('formCard').style.display = 'block';
+  }
 
+  document.getElementById('mStatus').addEventListener('change', (e) => {
+    document.getElementById('statusYearGroup').style.display = e.target.value === 'former' ? 'block' : 'none';
+  });
+
+  await loadMembers();
+}
+
+async function loadMembers() {
+  const { data, error } = await sb.from('member_roster').select('*');
   const listDiv = document.getElementById('directoryList');
+
   if (error) {
+    listDiv.className = 'loading-text';
     listDiv.textContent = 'Could not load the directory.';
     return;
   }
-  if (!members || members.length === 0) {
-    listDiv.textContent = 'No members found.';
+
+  allMembers = data || [];
+  render();
+}
+
+function setFilter(filter) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(el => el.classList.toggle('active', el.dataset.filter === filter));
+  render();
+}
+
+function render() {
+  const listDiv = document.getElementById('directoryList');
+  const canManage = isOfficerTier(currentProfile.role);
+  const members = allMembers.filter(m => m.status === activeFilter);
+
+  if (members.length === 0) {
+    listDiv.className = 'loading-text';
+    listDiv.textContent = activeFilter === 'active' ? 'No active members on file.' : 'No former members on file.';
     return;
   }
 
-  listDiv.className = 'directory-grid';
-  listDiv.innerHTML = members.map(m => `
-    <div class="member-card">
-      <div class="name">${escapeHtml(m.name || 'Unnamed')}</div>
-      <div class="role">${roleLabel(m.role)}</div>
-      <div class="email">${escapeHtml(m.email)}</div>
-    </div>
-  `).join('');
+  if (activeFilter === 'active') {
+    const sorted = [...members].sort((a, b) => {
+      const aw = a.position && POSITION_WEIGHT[a.position] !== undefined ? POSITION_WEIGHT[a.position] : 99;
+      const bw = b.position && POSITION_WEIGHT[b.position] !== undefined ? POSITION_WEIGHT[b.position] : 99;
+      if (aw !== bw) return aw - bw;
+      return a.riding_name.localeCompare(b.riding_name);
+    });
+
+    listDiv.className = 'directory-grid';
+    listDiv.innerHTML = sorted.map(m => `
+      <div class="member-card ${m.position ? 'is-officer' : ''}">
+        ${m.position ? `<div class="position-badge">${escapeHtml(m.position)}</div>` : ''}
+        <div class="riding-name">${escapeHtml(m.riding_name)}</div>
+        ${m.legal_name ? `<div class="legal-name">${escapeHtml(m.legal_name)}</div>` : ''}
+        ${m.phone ? `<div class="detail-row"><a href="tel:${escapeHtml(m.phone.replace(/[^0-9+]/g, ''))}">${escapeHtml(m.phone)}</a></div>` : ''}
+        ${m.email ? `<div class="detail-row"><a href="mailto:${escapeHtml(m.email)}">${escapeHtml(m.email)}</a></div>` : ''}
+        ${m.birthday ? `<div class="detail-row">🎂 ${escapeHtml(m.birthday)}</div>` : ''}
+        ${m.colors_year ? `<div class="since">Colors since ${m.colors_year} (${new Date().getFullYear() - m.colors_year} yrs)</div>` : ''}
+        ${canManage ? `
+          <div class="card-actions">
+            <button class="icon-btn" onclick="editMember('${m.id}')">Edit</button>
+            <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  } else {
+    const sorted = [...members].sort((a, b) => a.riding_name.localeCompare(b.riding_name));
+    listDiv.className = 'former-list';
+    listDiv.innerHTML = sorted.map(m => `
+      <div class="former-row">
+        <div><span class="riding-name">${escapeHtml(m.riding_name)}</span>${m.legal_name ? `<span class="legal-name">${escapeHtml(m.legal_name)}</span>` : ''}</div>
+        <div>
+          <span class="years">${m.colors_year ? m.colors_year + '–' : ''}${m.status_year || ''}</span>
+          ${canManage ? `
+            <button class="icon-btn" onclick="editMember('${m.id}')" style="margin-left:0.6rem;">Edit</button>
+            <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
+          ` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+document.getElementById('memberForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('formError');
+  const submitBtn = document.getElementById('mSubmit');
+
+  const status = document.getElementById('mStatus').value;
+  const payload = {
+    position: document.getElementById('mPosition').value || null,
+    status,
+    status_year: status === 'former' ? (numOrNull('mStatusYear')) : null,
+    riding_name: document.getElementById('mRidingName').value.trim(),
+    legal_name: document.getElementById('mLegalName').value.trim() || null,
+    phone: document.getElementById('mPhone').value.trim() || null,
+    email: document.getElementById('mEmail').value.trim() || null,
+    birthday: document.getElementById('mBirthday').value.trim() || null,
+    colors_year: numOrNull('mColorsYear')
+  };
+
+  errorDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  let result;
+  if (editingId) {
+    result = await sb.from('member_roster').update(payload).eq('id', editingId);
+  } else {
+    result = await sb.from('member_roster').insert([payload]);
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Save Member';
+
+  if (result.error) {
+    errorDiv.textContent = result.error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  resetMemberForm();
+  await loadMembers();
+});
+
+function numOrNull(id) {
+  const val = document.getElementById(id).value;
+  return val === '' ? null : Number(val);
+}
+
+function editMember(id) {
+  const m = allMembers.find(x => x.id === id);
+  if (!m) return;
+  editingId = m.id;
+  document.getElementById('formTitle').textContent = 'Edit Member';
+  document.getElementById('mPosition').value = m.position || '';
+  document.getElementById('mStatus').value = m.status;
+  document.getElementById('statusYearGroup').style.display = m.status === 'former' ? 'block' : 'none';
+  document.getElementById('mStatusYear').value = m.status_year || '';
+  document.getElementById('mRidingName').value = m.riding_name;
+  document.getElementById('mLegalName').value = m.legal_name || '';
+  document.getElementById('mPhone').value = m.phone || '';
+  document.getElementById('mEmail').value = m.email || '';
+  document.getElementById('mBirthday').value = m.birthday || '';
+  document.getElementById('mColorsYear').value = m.colors_year || '';
+  document.getElementById('mCancelBtn').style.display = 'inline-block';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetMemberForm() {
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Add a Member';
+  document.getElementById('memberForm').reset();
+  document.getElementById('statusYearGroup').style.display = 'none';
+  document.getElementById('mCancelBtn').style.display = 'none';
+  document.getElementById('formError').classList.remove('show');
+}
+
+async function deleteMember(id) {
+  if (!confirm('Remove this person from the directory?')) return;
+  const { error } = await sb.from('member_roster').delete().eq('id', id);
+  if (error) {
+    alert('Could not delete: ' + error.message);
+    return;
+  }
+  allMembers = allMembers.filter(m => m.id !== id);
+  render();
 }
 
 function escapeHtml(str) {
