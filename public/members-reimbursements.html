@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reimbursements — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+body { background: #0d0b10; }
+.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.2rem; }
+.portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
+.back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
+.back-link:hover { color: #eeeef2; }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input, .form-group textarea { width: 100%; padding: 0.65rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.filter-bar { display: flex; gap: 0.6rem; margin-bottom: 1.2rem; flex-wrap: wrap; }
+.filter-tab { padding: 0.4rem 1rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 999px; color: #c9c9d1; cursor: pointer; font-family: "Oswald", sans-serif; letter-spacing: 0.04em; font-size: 0.85rem; }
+.filter-tab.active { background: #7b2fbf; border-color: #7b2fbf; color: #fff; }
+
+.req-table { width: 100%; border-collapse: collapse; }
+.req-table th { text-align: left; color: #eeeef2; font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 0.78rem; padding: 0.55rem 0.6rem; border-bottom: 2px solid #4b1f7a; }
+.req-table td { padding: 0.55rem 0.6rem; border-bottom: 1px solid #2a1145; color: #c9c9d1; font-size: 0.88rem; vertical-align: top; }
+.table-scroll { overflow-x: auto; }
+
+.badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.badge-pending { background: rgba(212,167,43,0.18); color: #e8c96a; border: 1px solid #d4a72b; }
+.badge-approved { background: rgba(123,47,191,0.2); color: #c9a3e8; border: 1px solid #7b2fbf; }
+.badge-denied { background: rgba(212,43,30,0.18); color: #ff6b5a; border: 1px solid #d42b1e; }
+.badge-paid { background: rgba(75,192,75,0.18); color: #6fd36f; border: 1px solid #4bc04b; }
+
+.req-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+.icon-btn { background: none; border: 1px solid #4b1f7a; color: #c9c9d1; padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+.icon-btn:hover { border-color: #7b2fbf; color: #eeeef2; }
+.icon-btn.approve { border-color: #4bc04b; color: #6fd36f; }
+.icon-btn.approve:hover { background: rgba(75,192,75,0.1); }
+.icon-btn.deny { border-color: #d42b1e; color: #ff6b5a; }
+.icon-btn.deny:hover { background: rgba(212,43,30,0.1); }
+.review-note { color: #7a7a85; font-size: 0.8rem; margin-top: 0.3rem; font-style: italic; }
+
+.loading-text { color: #b98ae8; padding: 1rem 0; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
+.success-text { color: #6fd36f; padding: 0.5rem 0; display: none; }
+.success-text.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <img src="assets/centerpiece.jpg" alt="Regulators MC logo">
+      <span>Regulators MC<small>Palm Bay, FL</small></span>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div class="portal-card">
+    <h2>Submit a Reimbursement Request</h2>
+    <div id="formError" class="error-text"></div>
+    <div id="formSuccess" class="success-text"></div>
+    <form id="reqForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="rDate">Date of Expense</label>
+          <input id="rDate" type="date" required />
+        </div>
+        <div class="form-group">
+          <label for="rAmount">Amount</label>
+          <input id="rAmount" type="number" step="0.01" min="0.01" required />
+        </div>
+        <div class="form-group">
+          <label for="rCategory">Category</label>
+          <input id="rCategory" type="text" placeholder="e.g. Patches, Clothing" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="rDescription">What was it for?</label>
+        <textarea id="rDescription" rows="3" required placeholder="e.g. Soft colors, paid out of pocket at the June breakout"></textarea>
+      </div>
+      <button type="submit" class="submit-btn" id="reqSubmit">Submit Request</button>
+    </form>
+  </div>
+
+  <div class="portal-card">
+    <h2 id="listTitle">My Requests</h2>
+    <div class="filter-bar" id="filterBar"></div>
+    <div class="table-scroll">
+      <table class="req-table">
+        <thead><tr id="reqTableHead"></tr></thead>
+        <tbody id="reqTableBody"></tbody>
+      </table>
+    </div>
+    <div id="reqEmpty" class="loading-text">Loading...</div>
+  </div>
+</div>
+
+<script>
+let currentProfile = null;
+let canManage = false;
+let allRequests = [];
+let profileMap = {};
+let activeFilter = 'all';
+
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  currentProfile = auth.profile;
+  canManage = isOfficerTier(currentProfile.role);
+
+  document.getElementById('listTitle').textContent = canManage ? 'All Requests' : 'My Requests';
+  document.getElementById('reqTableHead').innerHTML = canManage
+    ? '<th>Requester</th><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Status</th><th></th>'
+    : '<th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Status</th><th></th>';
+
+  const filters = canManage
+    ? ['all', 'pending', 'approved', 'denied', 'paid']
+    : ['all', 'pending', 'approved', 'denied', 'paid'];
+  document.getElementById('filterBar').innerHTML = filters.map(f =>
+    `<div class="filter-tab ${f === 'all' ? 'active' : ''}" data-filter="${f}" onclick="setFilter('${f}')">${f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}</div>`
+  ).join('');
+
+  await loadRequests();
+}
+
+async function loadRequests() {
+  const [{ data: requests, error: reqError }, { data: profiles, error: profError }] = await Promise.all([
+    sb.from('reimbursement_requests').select('*').order('created_at', { ascending: false }),
+    sb.from('profiles').select('id, name, email')
+  ]);
+
+  if (reqError || profError) {
+    document.getElementById('reqEmpty').textContent = 'Could not load reimbursement requests.';
+    return;
+  }
+
+  allRequests = requests || [];
+  profileMap = {};
+  (profiles || []).forEach(p => { profileMap[p.id] = p.name || p.email; });
+
+  render();
+}
+
+function setFilter(filter) {
+  activeFilter = filter;
+  document.querySelectorAll('.filter-tab').forEach(el => {
+    el.classList.toggle('active', el.dataset.filter === filter);
+  });
+  render();
+}
+
+function render() {
+  const filtered = activeFilter === 'all' ? allRequests : allRequests.filter(r => r.status === activeFilter);
+  const tbody = document.getElementById('reqTableBody');
+  const emptyDiv = document.getElementById('reqEmpty');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    emptyDiv.style.display = 'block';
+    emptyDiv.className = 'loading-text';
+    emptyDiv.textContent = activeFilter === 'all' ? 'No reimbursement requests yet.' : `No ${activeFilter} requests.`;
+    return;
+  }
+  emptyDiv.style.display = 'none';
+
+  tbody.innerHTML = filtered.map(r => {
+    const requesterCell = canManage ? `<td>${escapeHtml(profileMap[r.requested_by] || 'Unknown')}</td>` : '';
+    const reviewNote = r.review_notes
+      ? `<div class="review-note">${escapeHtml(r.review_notes)}</div>`
+      : (r.reviewed_by ? `<div class="review-note">Reviewed by ${escapeHtml(profileMap[r.reviewed_by] || 'an officer')}</div>` : '');
+
+    let actions = '';
+    if (canManage && r.status === 'pending') {
+      actions = `
+        <div class="req-actions">
+          <button class="icon-btn approve" onclick="reviewRequest('${r.id}','approved')">Approve</button>
+          <button class="icon-btn deny" onclick="reviewRequest('${r.id}','denied')">Deny</button>
+        </div>
+      `;
+    } else if (canManage && r.status === 'approved') {
+      actions = `<button class="icon-btn" onclick="markPaid('${r.id}')">Mark Paid</button>`;
+    } else if (!canManage && r.status === 'pending') {
+      actions = `<button class="icon-btn deny" onclick="withdrawRequest('${r.id}')">Withdraw</button>`;
+    }
+
+    return `
+      <tr>
+        ${requesterCell}
+        <td>${formatDate(r.request_date)}</td>
+        <td>${escapeHtml(r.category || '—')}</td>
+        <td>${escapeHtml(r.description)}</td>
+        <td>${formatMoney(r.amount)}</td>
+        <td><span class="badge badge-${r.status}">${r.status}</span>${reviewNote}</td>
+        <td>${actions}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+document.getElementById('reqForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('formError');
+  const successDiv = document.getElementById('formSuccess');
+  const submitBtn = document.getElementById('reqSubmit');
+
+  errorDiv.classList.remove('show');
+  successDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Submitting...';
+
+  const { error } = await sb.from('reimbursement_requests').insert([{
+    requested_by: currentProfile.id,
+    request_date: document.getElementById('rDate').value,
+    amount: Number(document.getElementById('rAmount').value),
+    category: document.getElementById('rCategory').value || null,
+    description: document.getElementById('rDescription').value
+  }]);
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Submit Request';
+
+  if (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  document.getElementById('reqForm').reset();
+  successDiv.textContent = 'Request submitted — an officer will review it soon.';
+  successDiv.classList.add('show');
+  await loadRequests();
+});
+
+async function reviewRequest(id, newStatus) {
+  const label = newStatus === 'approved' ? 'approve' : 'deny';
+  const note = prompt(`Optional note for this ${label === 'approve' ? 'approval' : 'denial'} (visible to the member):`, '');
+  if (note === null) return;
+
+  const { error } = await sb.from('reimbursement_requests').update({
+    status: newStatus,
+    reviewed_by: currentProfile.id,
+    reviewed_at: new Date().toISOString(),
+    review_notes: note || null
+  }).eq('id', id);
+
+  if (error) {
+    alert('Could not update request: ' + error.message);
+    return;
+  }
+  await loadRequests();
+}
+
+async function markPaid(id) {
+  const req = allRequests.find(r => r.id === id);
+  if (!req) return;
+  if (!confirm(`Log a $${Number(req.amount).toFixed(2)} expense in the Treasurer Report and mark this reimbursement paid?`)) return;
+
+  const fiscalYear = new Date(req.request_date + 'T00:00:00').getFullYear();
+  const requesterName = profileMap[req.requested_by] || 'Member';
+
+  const { data: tx, error: txError } = await sb.from('treasurer_transactions').insert([{
+    fiscal_year: fiscalYear,
+    transaction_type: 'expense',
+    transaction_date: new Date().toISOString().slice(0, 10),
+    amount: req.amount,
+    category: req.category || 'Reimbursement',
+    description: `${requesterName} reimbursement — ${req.description}`,
+    created_by: currentProfile.id
+  }]).select().single();
+
+  if (txError) {
+    alert('Could not log the transaction: ' + txError.message);
+    return;
+  }
+
+  const { error: reqError } = await sb.from('reimbursement_requests').update({
+    status: 'paid',
+    transaction_id: tx.id
+  }).eq('id', id);
+
+  if (reqError) {
+    alert('Transaction was logged, but could not update the request status: ' + reqError.message);
+  }
+  await loadRequests();
+}
+
+async function withdrawRequest(id) {
+  if (!confirm('Withdraw this reimbursement request?')) return;
+  const { error } = await sb.from('reimbursement_requests').delete().eq('id', id);
+  if (error) {
+    alert('Could not withdraw: ' + error.message);
+    return;
+  }
+  await loadRequests();
+}
+
+function formatMoney(amount) {
+  return Number(amount).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+</script>
+
+</body>
+</html>

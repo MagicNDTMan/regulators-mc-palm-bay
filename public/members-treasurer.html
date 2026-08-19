@@ -42,6 +42,9 @@ body { background: #0d0b10; }
 
 .tx-table { width: 100%; border-collapse: collapse; }
 .tx-table th { text-align: left; color: #eeeef2; font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 0.8rem; padding: 0.5rem 0.6rem; border-bottom: 2px solid #4b1f7a; }
+.tx-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+.tx-table th.sortable:hover { color: #b98ae8; }
+.sort-arrow { display: inline-block; width: 0.9em; color: #7b2fbf; font-size: 0.75rem; }
 .tx-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #2a1145; color: #c9c9d1; font-size: 0.9rem; }
 .tx-amount.income { color: #6fd36f; }
 .tx-amount.expense { color: #ff6b5a; }
@@ -98,7 +101,7 @@ body { background: #0d0b10; }
     <div class="year-tabs" id="yearTabs"></div>
     <div id="statsWrap" class="loading-text">Loading...</div>
     <div id="breakdownWrap"></div>
-    <p class="note-text">Bank account and routing numbers are intentionally not shown here — see the Treasurer for those directly.</p>
+    <p class="note-text">Bank account and routing numbers are intentionally not shown here — see the Treasurer for those directly. Approved <a href="members-reimbursements.html" style="color:#b98ae8;">reimbursement requests</a> are logged here automatically once marked paid.</p>
   </div>
 
   <div class="portal-card" id="formCard" style="display:none;">
@@ -145,7 +148,14 @@ body { background: #0d0b10; }
     <h2>Transactions</h2>
     <div class="table-scroll">
       <table class="tx-table">
-        <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead>
+        <thead><tr>
+          <th class="sortable" data-field="transaction_date" onclick="setSort('transaction_date')">Date <span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="transaction_type" onclick="setSort('transaction_type')">Type <span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="category" onclick="setSort('category')">Category <span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="description" onclick="setSort('description')">Description <span class="sort-arrow"></span></th>
+          <th class="sortable" data-field="amount" onclick="setSort('amount')">Amount <span class="sort-arrow"></span></th>
+          <th></th>
+        </tr></thead>
         <tbody id="txTableBody"></tbody>
       </table>
     </div>
@@ -159,6 +169,8 @@ let allTransactions = [];
 let allSummaries = [];
 let selectedYear = null;
 let editingTxId = null;
+let sortField = 'transaction_date';
+let sortDir = 'asc';
 
 async function init() {
   const auth = await requireAuth();
@@ -256,10 +268,29 @@ function renderBreakdown(yearTx, totalIncome, totalExpense) {
   `;
 }
 
+function setSort(field) {
+  if (sortField === field) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortField = field;
+    sortDir = 'asc';
+  }
+  render();
+}
+
+function updateSortHeaders() {
+  document.querySelectorAll('.tx-table th.sortable').forEach(th => {
+    const arrow = th.querySelector('.sort-arrow');
+    arrow.textContent = th.dataset.field === sortField ? (sortDir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+
 function renderTable(yearTx) {
   const tbody = document.getElementById('txTableBody');
   const emptyDiv = document.getElementById('txEmpty');
   const canManage = isOfficerTier(currentProfile.role);
+
+  updateSortHeaders();
 
   if (yearTx.length === 0) {
     tbody.innerHTML = '';
@@ -268,10 +299,15 @@ function renderTable(yearTx) {
   }
   emptyDiv.style.display = 'none';
 
+  const dir = sortDir === 'asc' ? 1 : -1;
   const sorted = [...yearTx].sort((a, b) => {
-    if (!a.transaction_date) return 1;
-    if (!b.transaction_date) return -1;
-    return a.transaction_date.localeCompare(b.transaction_date);
+    const av = a[sortField];
+    const bv = b[sortField];
+    if (sortField === 'amount') return (Number(av) - Number(bv)) * dir;
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    return String(av).localeCompare(String(bv)) * dir;
   });
 
   tbody.innerHTML = sorted.map(t => `
