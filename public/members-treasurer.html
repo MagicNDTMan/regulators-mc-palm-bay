@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Treasurer Report — Regulators MC Palm Bay, FL</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="assets/centerpiece.jpg">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<style>
+body { background: #0d0b10; }
+.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1.2rem; }
+.portal-card { background: #17131d; border: 1px solid #4b1f7a; border-top: 3px solid #7b2fbf; border-radius: 8px; padding: 2rem; margin-bottom: 1.5rem; }
+.portal-card h2 { color: #eeeef2; margin-bottom: 1rem; font-family: "Oswald", sans-serif; }
+.back-link { display: inline-block; margin-bottom: 1.2rem; color: #b98ae8; text-decoration: none; }
+.back-link:hover { color: #eeeef2; }
+
+.year-tabs { display: flex; gap: 0.6rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.year-tab { padding: 0.5rem 1.2rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 999px; color: #c9c9d1; cursor: pointer; font-family: "Oswald", sans-serif; letter-spacing: 0.05em; }
+.year-tab.active { background: #7b2fbf; border-color: #7b2fbf; color: #fff; }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 6px; padding: 1rem 1.2rem; text-align: center; }
+.stat-card .stat-label { color: #b98ae8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+.stat-card .stat-value { color: #eeeef2; font-family: "Oswald", sans-serif; font-size: 1.5rem; font-weight: 600; }
+.stat-card.positive .stat-value { color: #6fd36f; }
+.stat-card.negative .stat-value { color: #ff6b5a; }
+
+.category-breakdown { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+@media (max-width: 700px) { .category-breakdown { grid-template-columns: 1fr; } }
+.breakdown-col h3 { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; font-size: 1rem; color: #eeeef2; margin-bottom: 0.8rem; }
+.breakdown-row { margin-bottom: 0.6rem; }
+.breakdown-row .breakdown-label { display: flex; justify-content: space-between; font-size: 0.88rem; color: #c9c9d1; margin-bottom: 0.25rem; }
+.breakdown-bar-track { background: #0d0b10; border-radius: 4px; height: 8px; overflow: hidden; }
+.breakdown-bar-fill { height: 100%; border-radius: 4px; }
+.breakdown-bar-fill.income { background: #4bc04b; }
+.breakdown-bar-fill.expense { background: #d42b1e; }
+
+.tx-table { width: 100%; border-collapse: collapse; }
+.tx-table th { text-align: left; color: #eeeef2; font-family: "Oswald", sans-serif; text-transform: uppercase; font-size: 0.8rem; padding: 0.5rem 0.6rem; border-bottom: 2px solid #4b1f7a; }
+.tx-table td { padding: 0.5rem 0.6rem; border-bottom: 1px solid #2a1145; color: #c9c9d1; font-size: 0.9rem; }
+.tx-amount.income { color: #6fd36f; }
+.tx-amount.expense { color: #ff6b5a; }
+.table-scroll { overflow-x: auto; }
+
+.badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.badge-income { background: rgba(75,192,75,0.18); color: #6fd36f; border: 1px solid #4bc04b; }
+.badge-expense { background: rgba(212,43,30,0.18); color: #ff6b5a; border: 1px solid #d42b1e; }
+
+.icon-btn { background: none; border: 1px solid #4b1f7a; color: #c9c9d1; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
+.icon-btn:hover { border-color: #7b2fbf; color: #eeeef2; }
+.icon-btn.danger { border-color: #d42b1e; color: #ff6b5a; }
+.icon-btn.danger:hover { background: rgba(212,43,30,0.1); }
+
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; color: #c9c9d1; font-size: 0.9rem; margin-bottom: 0.4rem; font-weight: 600; }
+.form-group input, .form-group select { width: 100%; padding: 0.65rem; background: #0d0b10; border: 1px solid #4b1f7a; border-radius: 4px; color: #eeeef2; font-family: inherit; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; }
+.submit-btn { padding: 0.7rem 1.5rem; background: #7b2fbf; color: #fff; border: none; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; }
+.submit-btn:hover { background: #9345d6; }
+.cancel-edit-btn { padding: 0.7rem 1.2rem; background: transparent; border: 1px solid #4b1f7a; color: #c9c9d1; border-radius: 4px; font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; margin-left: 0.6rem; }
+
+.loading-text { color: #b98ae8; padding: 1rem 0; }
+.error-text { color: #ff6b5a; padding: 0.5rem 0; display: none; }
+.error-text.show { display: block; }
+.note-text { color: #7a7a85; font-size: 0.85rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav-bar">
+    <a class="nav-brand" href="index.html">
+      <img src="assets/centerpiece.jpg" alt="Regulators MC logo">
+      <span>Regulators MC<small>Palm Bay, FL</small></span>
+    </a>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="events.html">Events</a></li>
+        <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="contact.html">Contact</a></li>
+        <li><a href="#" onclick="signOutAndRedirect()">Logout</a></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<div class="container">
+  <a class="back-link" href="members.html">&larr; Back to Portal</a>
+
+  <div class="portal-card">
+    <h2>Treasurer Report</h2>
+    <div class="year-tabs" id="yearTabs"></div>
+    <div id="statsWrap" class="loading-text">Loading...</div>
+    <div id="breakdownWrap"></div>
+    <p class="note-text">Bank account and routing numbers are intentionally not shown here — see the Treasurer for those directly.</p>
+  </div>
+
+  <div class="portal-card" id="formCard" style="display:none;">
+    <h2 id="formTitle">Log a Transaction</h2>
+    <div id="formError" class="error-text"></div>
+    <form id="txForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="txYear">Fiscal Year</label>
+          <input id="txYear" type="number" required min="2020" max="2100" />
+        </div>
+        <div class="form-group">
+          <label for="txType">Type</label>
+          <select id="txType" required>
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="txDate">Date (optional)</label>
+          <input id="txDate" type="date" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="txAmount">Amount</label>
+          <input id="txAmount" type="number" step="0.01" min="0" required />
+        </div>
+        <div class="form-group">
+          <label for="txCategory">Category</label>
+          <input id="txCategory" type="text" placeholder="e.g. Memberships, Donations" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="txDescription">Description</label>
+        <input id="txDescription" type="text" placeholder="e.g. Blank, July dues" />
+      </div>
+      <button type="submit" class="submit-btn" id="txSubmit">Save Transaction</button>
+      <button type="button" class="cancel-edit-btn" id="txCancelBtn" style="display:none;" onclick="resetTxForm()">Cancel</button>
+    </form>
+  </div>
+
+  <div class="portal-card">
+    <h2>Transactions</h2>
+    <div class="table-scroll">
+      <table class="tx-table">
+        <thead><tr><th>Date</th><th>Type</th><th>Category</th><th>Description</th><th>Amount</th><th></th></tr></thead>
+        <tbody id="txTableBody"></tbody>
+      </table>
+    </div>
+    <div id="txEmpty" class="loading-text" style="display:none;">No transactions logged for this year yet.</div>
+  </div>
+</div>
+
+<script>
+let currentProfile = null;
+let allTransactions = [];
+let allSummaries = [];
+let selectedYear = null;
+let editingTxId = null;
+
+async function init() {
+  const auth = await requireAuth();
+  if (!auth) return;
+  currentProfile = auth.profile;
+
+  if (isOfficerTier(currentProfile.role)) {
+    document.getElementById('formCard').style.display = 'block';
+  }
+
+  const [{ data: transactions, error: txError }, { data: summaries, error: sumError }] = await Promise.all([
+    sb.from('treasurer_transactions').select('*').order('transaction_date', { ascending: true, nullsFirst: true }),
+    sb.from('treasurer_summary').select('*')
+  ]);
+
+  if (txError || sumError) {
+    document.getElementById('statsWrap').textContent = 'Could not load treasurer data.';
+    return;
+  }
+
+  allTransactions = transactions || [];
+  allSummaries = summaries || [];
+
+  const years = [...new Set([
+    ...allTransactions.map(t => t.fiscal_year),
+    ...allSummaries.map(s => s.fiscal_year)
+  ])].sort((a, b) => b - a);
+
+  renderYearTabs(years);
+  selectedYear = years[0] || new Date().getFullYear();
+  document.getElementById('txYear').value = selectedYear;
+  render();
+}
+
+function renderYearTabs(years) {
+  const wrap = document.getElementById('yearTabs');
+  wrap.innerHTML = years.map(y => `<div class="year-tab" data-year="${y}" onclick="selectYear(${y})">${y}</div>`).join('');
+}
+
+function selectYear(year) {
+  selectedYear = year;
+  render();
+}
+
+function render() {
+  document.querySelectorAll('.year-tab').forEach(el => {
+    el.classList.toggle('active', Number(el.dataset.year) === selectedYear);
+  });
+
+  const yearTx = allTransactions.filter(t => t.fiscal_year === selectedYear);
+  const summary = allSummaries.find(s => s.fiscal_year === selectedYear);
+  const startingBalance = summary ? Number(summary.starting_balance) : 0;
+
+  const totalIncome = yearTx.filter(t => t.transaction_type === 'income').reduce((sum, t) => sum + Number(t.amount), 0);
+  const totalExpense = yearTx.filter(t => t.transaction_type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0);
+  const netChange = totalIncome - totalExpense;
+  const endingBalance = startingBalance + netChange;
+
+  document.getElementById('statsWrap').className = '';
+  document.getElementById('statsWrap').innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Starting Balance</div><div class="stat-value">${formatMoney(startingBalance)}</div></div>
+      <div class="stat-card positive"><div class="stat-label">Total Income</div><div class="stat-value">${formatMoney(totalIncome)}</div></div>
+      <div class="stat-card negative"><div class="stat-label">Total Expenses</div><div class="stat-value">${formatMoney(totalExpense)}</div></div>
+      <div class="stat-card ${netChange >= 0 ? 'positive' : 'negative'}"><div class="stat-label">Net Change</div><div class="stat-value">${netChange >= 0 ? '+' : ''}${formatMoney(netChange)}</div></div>
+      <div class="stat-card"><div class="stat-label">Ending Balance</div><div class="stat-value">${formatMoney(endingBalance)}</div></div>
+    </div>
+  `;
+
+  renderBreakdown(yearTx, totalIncome, totalExpense);
+  renderTable(yearTx);
+}
+
+function renderBreakdown(yearTx, totalIncome, totalExpense) {
+  const wrap = document.getElementById('breakdownWrap');
+  const byCategory = (type, total) => {
+    const cats = {};
+    yearTx.filter(t => t.transaction_type === type).forEach(t => {
+      const cat = t.category || 'Uncategorized';
+      cats[cat] = (cats[cat] || 0) + Number(t.amount);
+    });
+    return Object.entries(cats).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => `
+      <div class="breakdown-row">
+        <div class="breakdown-label"><span>${escapeHtml(cat)}</span><span>${formatMoney(amt)}</span></div>
+        <div class="breakdown-bar-track"><div class="breakdown-bar-fill ${type}" style="width:${total > 0 ? Math.round(amt / total * 100) : 0}%;"></div></div>
+      </div>
+    `).join('') || '<p style="color:#7a7a85; font-size:0.85rem;">Nothing logged yet.</p>';
+  };
+
+  wrap.innerHTML = `
+    <div class="category-breakdown">
+      <div class="breakdown-col"><h3>Income by Category</h3>${byCategory('income', totalIncome)}</div>
+      <div class="breakdown-col"><h3>Expenses by Category</h3>${byCategory('expense', totalExpense)}</div>
+    </div>
+  `;
+}
+
+function renderTable(yearTx) {
+  const tbody = document.getElementById('txTableBody');
+  const emptyDiv = document.getElementById('txEmpty');
+  const canManage = isOfficerTier(currentProfile.role);
+
+  if (yearTx.length === 0) {
+    tbody.innerHTML = '';
+    emptyDiv.style.display = 'block';
+    return;
+  }
+  emptyDiv.style.display = 'none';
+
+  const sorted = [...yearTx].sort((a, b) => {
+    if (!a.transaction_date) return 1;
+    if (!b.transaction_date) return -1;
+    return a.transaction_date.localeCompare(b.transaction_date);
+  });
+
+  tbody.innerHTML = sorted.map(t => `
+    <tr>
+      <td>${t.transaction_date ? formatDate(t.transaction_date) : '—'}</td>
+      <td><span class="badge badge-${t.transaction_type}">${t.transaction_type}</span></td>
+      <td>${escapeHtml(t.category || '—')}</td>
+      <td>${escapeHtml(t.description || '—')}</td>
+      <td class="tx-amount ${t.transaction_type}">${t.transaction_type === 'expense' ? '-' : '+'}${formatMoney(t.amount)}</td>
+      <td>
+        ${canManage ? `
+          <button class="icon-btn" onclick="editTx('${t.id}')">Edit</button>
+          <button class="icon-btn danger" onclick="deleteTx('${t.id}')">Delete</button>
+        ` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('txForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorDiv = document.getElementById('formError');
+  const submitBtn = document.getElementById('txSubmit');
+
+  const payload = {
+    fiscal_year: Number(document.getElementById('txYear').value),
+    transaction_type: document.getElementById('txType').value,
+    transaction_date: document.getElementById('txDate').value || null,
+    amount: Number(document.getElementById('txAmount').value),
+    category: document.getElementById('txCategory').value || null,
+    description: document.getElementById('txDescription').value || null
+  };
+
+  errorDiv.classList.remove('show');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  let result;
+  if (editingTxId) {
+    result = await sb.from('treasurer_transactions').update(payload).eq('id', editingTxId);
+  } else {
+    payload.created_by = currentProfile.id;
+    result = await sb.from('treasurer_transactions').insert([payload]);
+  }
+
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Save Transaction';
+
+  if (result.error) {
+    errorDiv.textContent = result.error.message;
+    errorDiv.classList.add('show');
+    return;
+  }
+
+  const { data: transactions } = await sb.from('treasurer_transactions').select('*');
+  allTransactions = transactions || [];
+  resetTxForm();
+  render();
+});
+
+function editTx(id) {
+  const t = allTransactions.find(x => x.id === id);
+  if (!t) return;
+  editingTxId = t.id;
+  document.getElementById('formTitle').textContent = 'Edit Transaction';
+  document.getElementById('txYear').value = t.fiscal_year;
+  document.getElementById('txType').value = t.transaction_type;
+  document.getElementById('txDate').value = t.transaction_date || '';
+  document.getElementById('txAmount').value = t.amount;
+  document.getElementById('txCategory').value = t.category || '';
+  document.getElementById('txDescription').value = t.description || '';
+  document.getElementById('txCancelBtn').style.display = 'inline-block';
+  document.getElementById('formCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function resetTxForm() {
+  editingTxId = null;
+  document.getElementById('formTitle').textContent = 'Log a Transaction';
+  document.getElementById('txForm').reset();
+  document.getElementById('txYear').value = selectedYear;
+  document.getElementById('txCancelBtn').style.display = 'none';
+  document.getElementById('formError').classList.remove('show');
+}
+
+async function deleteTx(id) {
+  if (!confirm('Delete this transaction?')) return;
+  const { error } = await sb.from('treasurer_transactions').delete().eq('id', id);
+  if (error) {
+    alert('Could not delete: ' + error.message);
+    return;
+  }
+  allTransactions = allTransactions.filter(t => t.id !== id);
+  render();
+}
+
+function formatMoney(amount) {
+  return Number(amount).toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+init();
+</script>
+
+</body>
+</html>
