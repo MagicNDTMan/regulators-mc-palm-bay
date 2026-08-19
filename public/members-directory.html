@@ -26,7 +26,17 @@ body { background: #0d0b10; }
 .directory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem; }
 .member-card { background: #0d0b10; border: 1px solid #4b1f7a; border-top: 3px solid #4b1f7a; border-radius: 6px; padding: 1.2rem; }
 .member-card.is-officer { border-top-color: #7b2fbf; }
-.member-card .position-badge { display: inline-block; background: rgba(123,47,191,0.2); color: #c9a3e8; border: 1px solid #7b2fbf; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem; }
+.member-card.is-loa { border-top-color: #d4a72b; }
+.member-card .position-badge { display: inline-block; background: rgba(123,47,191,0.2); color: #c9a3e8; border: 1px solid #7b2fbf; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem; margin-right: 0.4rem; }
+.member-card .loa-badge { display: inline-block; background: rgba(212,167,43,0.18); color: #e8c96a; border: 1px solid #d4a72b; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem; }
+.member-card .loa-notes { color: #e8c96a; font-size: 0.8rem; margin-top: 0.3rem; }
+.login-indicator { display: inline-flex; align-items: center; gap: 0.35rem; color: #6fd36f; font-size: 0.75rem; margin-top: 0.6rem; }
+.login-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: #6fd36f; display: inline-block; flex-shrink: 0; }
+.no-login-indicator { display: inline-flex; align-items: center; gap: 0.35rem; color: #7a7a85; font-size: 0.75rem; margin-top: 0.6rem; }
+.no-login-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: #4b1f7a; display: inline-block; flex-shrink: 0; }
+.special-badge { display: inline-block; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 0.5rem; margin-right: 0.4rem; }
+.special-badge.lifer { background: rgba(212,167,43,0.2); color: #f0d98c; border: 1px solid #d4a72b; }
+.special-badge.retiree { background: rgba(201,201,209,0.15); color: #eeeef2; border: 1px solid #c9c9d1; }
 .member-card .riding-name { color: #eeeef2; font-family: "Oswald", sans-serif; font-size: 1.15rem; margin-bottom: 0.15rem; }
 .member-card .legal-name { color: #7a7a85; font-size: 0.85rem; margin-bottom: 0.7rem; }
 .member-card .detail-row { color: #c9c9d1; font-size: 0.85rem; margin-bottom: 0.3rem; }
@@ -105,12 +115,41 @@ body { background: #0d0b10; }
           <label for="mStatus">Status</label>
           <select id="mStatus">
             <option value="active">Active</option>
+            <option value="loa">On Leave (LOA)</option>
             <option value="former">Former</option>
           </select>
         </div>
         <div class="form-group" id="statusYearGroup" style="display:none;">
           <label for="mStatusYear">Year Left</label>
           <input id="mStatusYear" type="number" min="2000" max="2100" />
+        </div>
+      </div>
+      <div class="form-row" id="loaFieldsGroup" style="display:none;">
+        <div class="form-group">
+          <label for="mLoaStart">On Leave Since</label>
+          <input id="mLoaStart" type="date" />
+        </div>
+        <div class="form-group">
+          <label for="mLoaNotes">Leave Notes (optional)</label>
+          <input id="mLoaNotes" type="text" placeholder="e.g. military deployment" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="mLoaYearsTotal">Total Years on LOA (past + current, subtracted from tenure)</label>
+          <input id="mLoaYearsTotal" type="number" step="0.1" min="0" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="mSpecialStatus">Lifer / Retiree</label>
+          <select id="mSpecialStatus">
+            <option value="">— None —</option>
+            <option value="lifer">Lifer</option>
+            <option value="retiree">Retiree</option>
+          </select>
+        </div>
+        <div class="form-group" id="specialStatusDateGroup" style="display:none;">
+          <label for="mSpecialStatusDate">Date Status Attained</label>
+          <input id="mSpecialStatusDate" type="date" />
         </div>
       </div>
       <div class="form-row">
@@ -150,6 +189,7 @@ body { background: #0d0b10; }
     <h2>Member Directory</h2>
     <div class="filter-bar">
       <div class="filter-tab active" data-filter="active" onclick="setFilter('active')">Active</div>
+      <div class="filter-tab" data-filter="loa" onclick="setFilter('loa')">On Leave</div>
       <div class="filter-tab" data-filter="former" onclick="setFilter('former')">Former</div>
     </div>
     <div id="directoryList" class="loading-text">Loading...</div>
@@ -160,6 +200,7 @@ body { background: #0d0b10; }
 const POSITION_WEIGHT = { 'President': 0, 'Vice President': 1, 'Secretary': 2, 'Treasurer': 3, 'SAA': 4, 'Road Captain': 5, 'PRO': 6 };
 let currentProfile = null;
 let allMembers = [];
+let loginEmails = new Set();
 let activeFilter = 'active';
 let editingId = null;
 
@@ -174,22 +215,31 @@ async function init() {
 
   document.getElementById('mStatus').addEventListener('change', (e) => {
     document.getElementById('statusYearGroup').style.display = e.target.value === 'former' ? 'block' : 'none';
+    document.getElementById('loaFieldsGroup').style.display = e.target.value === 'loa' ? 'grid' : 'none';
+  });
+
+  document.getElementById('mSpecialStatus').addEventListener('change', (e) => {
+    document.getElementById('specialStatusDateGroup').style.display = e.target.value ? 'block' : 'none';
   });
 
   await loadMembers();
 }
 
 async function loadMembers() {
-  const { data, error } = await sb.from('member_roster').select('*');
   const listDiv = document.getElementById('directoryList');
+  const [{ data: roster, error: rosterError }, { data: profiles, error: profError }] = await Promise.all([
+    sb.from('member_roster').select('*'),
+    sb.from('profiles').select('email')
+  ]);
 
-  if (error) {
+  if (rosterError || profError) {
     listDiv.className = 'loading-text';
     listDiv.textContent = 'Could not load the directory.';
     return;
   }
 
-  allMembers = data || [];
+  allMembers = roster || [];
+  loginEmails = new Set((profiles || []).map(p => (p.email || '').toLowerCase()));
   render();
 }
 
@@ -199,6 +249,22 @@ function setFilter(filter) {
   render();
 }
 
+function tenureLabel(m) {
+  if (!m.colors_year) return '';
+  const rawYears = new Date().getFullYear() - m.colors_year;
+  const adjusted = rawYears - (Number(m.loa_years_total) || 0);
+  const adjustedNote = m.loa_years_total > 0 ? ` — ${m.loa_years_total} yr${m.loa_years_total === 1 ? '' : 's'} on LOA excluded` : '';
+  return `Colors since ${m.colors_year} (${adjusted} yrs${adjustedNote})`;
+}
+
+function loginBadge(m) {
+  if (!m.email) return '';
+  const hasLogin = loginEmails.has(m.email.toLowerCase());
+  return hasLogin
+    ? `<div class="login-indicator"><span class="dot"></span>Has portal login</div>`
+    : `<div class="no-login-indicator"><span class="dot"></span>No portal login</div>`;
+}
+
 function render() {
   const listDiv = document.getElementById('directoryList');
   const canManage = isOfficerTier(currentProfile.role);
@@ -206,11 +272,12 @@ function render() {
 
   if (members.length === 0) {
     listDiv.className = 'loading-text';
-    listDiv.textContent = activeFilter === 'active' ? 'No active members on file.' : 'No former members on file.';
+    const labels = { active: 'active', loa: 'on-leave', former: 'former' };
+    listDiv.textContent = `No ${labels[activeFilter] || activeFilter} members on file.`;
     return;
   }
 
-  if (activeFilter === 'active') {
+  if (activeFilter === 'active' || activeFilter === 'loa') {
     const sorted = [...members].sort((a, b) => {
       const aw = a.position && POSITION_WEIGHT[a.position] !== undefined ? POSITION_WEIGHT[a.position] : 99;
       const bw = b.position && POSITION_WEIGHT[b.position] !== undefined ? POSITION_WEIGHT[b.position] : 99;
@@ -220,14 +287,19 @@ function render() {
 
     listDiv.className = 'directory-grid';
     listDiv.innerHTML = sorted.map(m => `
-      <div class="member-card ${m.position ? 'is-officer' : ''}">
+      <div class="member-card ${m.status === 'loa' ? 'is-loa' : (m.position ? 'is-officer' : '')}">
+        ${m.status === 'loa' ? '<div class="loa-badge">On Leave</div>' : ''}
         ${m.position ? `<div class="position-badge">${escapeHtml(m.position)}</div>` : ''}
+        ${m.special_status ? `<div class="special-badge ${m.special_status}">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'}</div>` : ''}
         <div class="riding-name">${escapeHtml(m.riding_name)}</div>
         ${m.legal_name ? `<div class="legal-name">${escapeHtml(m.legal_name)}</div>` : ''}
         ${m.phone ? `<div class="detail-row"><a href="tel:${escapeHtml(m.phone.replace(/[^0-9+]/g, ''))}">${escapeHtml(m.phone)}</a></div>` : ''}
         ${m.email ? `<div class="detail-row"><a href="mailto:${escapeHtml(m.email)}">${escapeHtml(m.email)}</a></div>` : ''}
         ${m.birthday ? `<div class="detail-row">🎂 ${escapeHtml(m.birthday)}</div>` : ''}
-        ${m.colors_year ? `<div class="since">Colors since ${m.colors_year} (${new Date().getFullYear() - m.colors_year} yrs)</div>` : ''}
+        ${m.colors_year ? `<div class="since">${tenureLabel(m)}</div>` : ''}
+        ${m.special_status && m.special_status_date ? `<div class="since">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'} since ${formatDate(m.special_status_date)}</div>` : ''}
+        ${m.status === 'loa' && m.loa_start ? `<div class="loa-notes">On leave since ${formatDate(m.loa_start)}${m.loa_notes ? ' — ' + escapeHtml(m.loa_notes) : ''}</div>` : ''}
+        ${loginBadge(m)}
         ${canManage ? `
           <div class="card-actions">
             <button class="icon-btn" onclick="editMember('${m.id}')">Edit</button>
@@ -241,9 +313,9 @@ function render() {
     listDiv.className = 'former-list';
     listDiv.innerHTML = sorted.map(m => `
       <div class="former-row">
-        <div><span class="riding-name">${escapeHtml(m.riding_name)}</span>${m.legal_name ? `<span class="legal-name">${escapeHtml(m.legal_name)}</span>` : ''}</div>
+        <div>${m.special_status ? `<span class="special-badge ${m.special_status}">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'}</span>` : ''}<span class="riding-name">${escapeHtml(m.riding_name)}</span>${m.legal_name ? `<span class="legal-name">${escapeHtml(m.legal_name)}</span>` : ''}</div>
         <div>
-          <span class="years">${m.colors_year ? m.colors_year + '–' : ''}${m.status_year || ''}</span>
+          <span class="years">${m.colors_year ? m.colors_year + '–' : ''}${m.status_year || ''}${m.loa_years_total > 0 ? ` (${m.loa_years_total} yr LOA excluded)` : ''}</span>
           ${canManage ? `
             <button class="icon-btn" onclick="editMember('${m.id}')" style="margin-left:0.6rem;">Edit</button>
             <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
@@ -260,6 +332,7 @@ document.getElementById('memberForm').addEventListener('submit', async (e) => {
   const submitBtn = document.getElementById('mSubmit');
 
   const status = document.getElementById('mStatus').value;
+  const specialStatus = document.getElementById('mSpecialStatus').value;
   const payload = {
     position: document.getElementById('mPosition').value || null,
     status,
@@ -269,7 +342,12 @@ document.getElementById('memberForm').addEventListener('submit', async (e) => {
     phone: document.getElementById('mPhone').value.trim() || null,
     email: document.getElementById('mEmail').value.trim() || null,
     birthday: document.getElementById('mBirthday').value.trim() || null,
-    colors_year: numOrNull('mColorsYear')
+    colors_year: numOrNull('mColorsYear'),
+    loa_start: status === 'loa' ? (document.getElementById('mLoaStart').value || null) : null,
+    loa_notes: status === 'loa' ? (document.getElementById('mLoaNotes').value.trim() || null) : null,
+    loa_years_total: Number(document.getElementById('mLoaYearsTotal').value) || 0,
+    special_status: specialStatus || null,
+    special_status_date: specialStatus ? (document.getElementById('mSpecialStatusDate').value || null) : null
   };
 
   errorDiv.classList.remove('show');
@@ -310,6 +388,13 @@ function editMember(id) {
   document.getElementById('mStatus').value = m.status;
   document.getElementById('statusYearGroup').style.display = m.status === 'former' ? 'block' : 'none';
   document.getElementById('mStatusYear').value = m.status_year || '';
+  document.getElementById('loaFieldsGroup').style.display = m.status === 'loa' ? 'grid' : 'none';
+  document.getElementById('mLoaStart').value = m.loa_start || '';
+  document.getElementById('mLoaNotes').value = m.loa_notes || '';
+  document.getElementById('mLoaYearsTotal').value = m.loa_years_total || 0;
+  document.getElementById('mSpecialStatus').value = m.special_status || '';
+  document.getElementById('specialStatusDateGroup').style.display = m.special_status ? 'block' : 'none';
+  document.getElementById('mSpecialStatusDate').value = m.special_status_date || '';
   document.getElementById('mRidingName').value = m.riding_name;
   document.getElementById('mLegalName').value = m.legal_name || '';
   document.getElementById('mPhone').value = m.phone || '';
@@ -325,6 +410,8 @@ function resetMemberForm() {
   document.getElementById('formTitle').textContent = 'Add a Member';
   document.getElementById('memberForm').reset();
   document.getElementById('statusYearGroup').style.display = 'none';
+  document.getElementById('loaFieldsGroup').style.display = 'none';
+  document.getElementById('specialStatusDateGroup').style.display = 'none';
   document.getElementById('mCancelBtn').style.display = 'none';
   document.getElementById('formError').classList.remove('show');
 }
@@ -338,6 +425,11 @@ async function deleteMember(id) {
   }
   allMembers = allMembers.filter(m => m.id !== id);
   render();
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function escapeHtml(str) {
