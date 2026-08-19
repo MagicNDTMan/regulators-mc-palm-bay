@@ -201,6 +201,7 @@ const POSITION_WEIGHT = { 'President': 0, 'Vice President': 1, 'Secretary': 2, '
 let currentProfile = null;
 let allMembers = [];
 let loginEmails = new Set();
+let loginProfileIds = new Set();
 let activeFilter = 'active';
 let editingId = null;
 
@@ -229,7 +230,7 @@ async function loadMembers() {
   const listDiv = document.getElementById('directoryList');
   const [{ data: roster, error: rosterError }, { data: profiles, error: profError }] = await Promise.all([
     sb.from('member_roster').select('*'),
-    sb.from('profiles').select('email')
+    sb.from('profiles').select('id, email')
   ]);
 
   if (rosterError || profError) {
@@ -240,6 +241,7 @@ async function loadMembers() {
 
   allMembers = roster || [];
   loginEmails = new Set((profiles || []).map(p => (p.email || '').toLowerCase()));
+  loginProfileIds = new Set((profiles || []).map(p => p.id));
   render();
 }
 
@@ -258,8 +260,12 @@ function tenureLabel(m) {
 }
 
 function loginBadge(m) {
-  if (!m.email) return '';
-  const hasLogin = loginEmails.has(m.email.toLowerCase());
+  // linked_profile_id is authoritative (set when a member's login email differs
+  // from their roster contact email); email match is the fallback for everyone else.
+  const hasLogin = m.linked_profile_id
+    ? loginProfileIds.has(m.linked_profile_id)
+    : (m.email ? loginEmails.has(m.email.toLowerCase()) : false);
+  if (!m.email && !m.linked_profile_id) return '';
   return hasLogin
     ? `<div class="login-indicator"><span class="dot"></span>Has portal login</div>`
     : `<div class="no-login-indicator"><span class="dot"></span>No portal login</div>`;
