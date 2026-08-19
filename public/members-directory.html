@@ -52,6 +52,10 @@ body { background: #0d0b10; }
 .former-row .legal-name { color: #7a7a85; font-size: 0.85rem; margin-left: 0.5rem; }
 .former-row .years { color: #7a7a85; font-size: 0.85rem; }
 
+.section-subheading { color: #b98ae8; font-family: "Oswald", sans-serif; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.05em; margin: 1.6rem 0 0.8rem; }
+.section-subheading:first-child { margin-top: 0; }
+.empty-note { color: #7a7a85; font-size: 0.85rem; padding: 0.5rem 0 1rem; }
+
 .icon-btn { background: none; border: 1px solid #4b1f7a; color: #c9c9d1; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.75rem; cursor: pointer; }
 .icon-btn:hover { border-color: #7b2fbf; color: #eeeef2; }
 .icon-btn.danger { border-color: #d42b1e; color: #ff6b5a; }
@@ -255,8 +259,7 @@ function tenureLabel(m) {
   if (!m.colors_year) return '';
   const rawYears = new Date().getFullYear() - m.colors_year;
   const adjusted = rawYears - (Number(m.loa_years_total) || 0);
-  const adjustedNote = m.loa_years_total > 0 ? ` — ${m.loa_years_total} yr${m.loa_years_total === 1 ? '' : 's'} on LOA excluded` : '';
-  return `Colors since ${m.colors_year} (${adjusted} yrs${adjustedNote})`;
+  return `Colors since ${m.colors_year} (${adjusted} yrs)`;
 }
 
 function loginBadge(m) {
@@ -271,65 +274,118 @@ function loginBadge(m) {
     : `<div class="no-login-indicator"><span class="dot"></span>No portal login</div>`;
 }
 
+function memberCardHtml(m, canManage) {
+  return `
+    <div class="member-card ${m.status === 'loa' ? 'is-loa' : (m.position ? 'is-officer' : '')}">
+      ${m.status === 'loa' ? '<div class="loa-badge">On Leave</div>' : ''}
+      ${m.position ? `<div class="position-badge">${escapeHtml(m.position)}</div>` : ''}
+      ${m.special_status ? `<div class="special-badge ${m.special_status}">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'}</div>` : ''}
+      <div class="riding-name">${escapeHtml(m.riding_name)}</div>
+      ${m.legal_name ? `<div class="legal-name">${escapeHtml(m.legal_name)}</div>` : ''}
+      ${m.phone ? `<div class="detail-row"><a href="tel:${escapeHtml(m.phone.replace(/[^0-9+]/g, ''))}">${escapeHtml(m.phone)}</a></div>` : ''}
+      ${m.email ? `<div class="detail-row"><a href="mailto:${escapeHtml(m.email)}">${escapeHtml(m.email)}</a></div>` : ''}
+      ${m.birthday ? `<div class="detail-row">🎂 ${escapeHtml(m.birthday)}</div>` : ''}
+      ${m.colors_year ? `<div class="since">${tenureLabel(m)}</div>` : ''}
+      ${m.special_status && m.special_status_date ? `<div class="since">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'} since ${formatDate(m.special_status_date)}</div>` : ''}
+      ${m.status === 'loa' && m.loa_start ? `<div class="loa-notes">On leave since ${formatDate(m.loa_start)}${m.loa_notes ? ' — ' + escapeHtml(m.loa_notes) : ''}</div>` : ''}
+      ${loginBadge(m)}
+      ${canManage ? `
+        <div class="card-actions">
+          <button class="icon-btn" onclick="editMember('${m.id}')">Edit</button>
+          <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function loaHistoryRowHtml(m, canManage) {
+  const started = m.loa_start ? `since ${formatDate(m.loa_start)}` : '';
+  const years = Number(m.loa_years_total) || 0;
+  const yearsLabel = years > 0 ? `${years} yr${years === 1 ? '' : 's'} on leave` : 'On leave';
+  return `
+    <div class="former-row">
+      <div>${m.position ? `<span class="position-badge">${escapeHtml(m.position)}</span>` : ''}<span class="riding-name">${escapeHtml(m.riding_name)}</span>${m.legal_name ? `<span class="legal-name">${escapeHtml(m.legal_name)}</span>` : ''}</div>
+      <div>
+        <span class="years">${yearsLabel}${started ? ' (' + started + ')' : ''}${m.loa_notes ? ' — ' + escapeHtml(m.loa_notes) : ''}</span>
+        ${canManage ? `<button class="icon-btn" onclick="editMember('${m.id}')" style="margin-left:0.6rem;">Edit</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
 function render() {
   const listDiv = document.getElementById('directoryList');
   const canManage = isOfficerTier(currentProfile.role);
-  const members = allMembers.filter(m => m.status === activeFilter);
 
-  if (members.length === 0) {
-    listDiv.className = 'loading-text';
-    const labels = { active: 'active', loa: 'on-leave', former: 'former' };
-    listDiv.textContent = `No ${labels[activeFilter] || activeFilter} members on file.`;
+  if (activeFilter === 'active') {
+    const members = allMembers.filter(m => m.status === 'active');
+    if (members.length === 0) {
+      listDiv.className = 'loading-text';
+      listDiv.textContent = 'No active members on file.';
+      return;
+    }
+    const sorted = sortByPosition(members);
+    listDiv.className = 'directory-grid';
+    listDiv.innerHTML = sorted.map(m => memberCardHtml(m, canManage)).join('');
     return;
   }
 
-  if (activeFilter === 'active' || activeFilter === 'loa') {
-    const sorted = [...members].sort((a, b) => {
-      const aw = a.position && POSITION_WEIGHT[a.position] !== undefined ? POSITION_WEIGHT[a.position] : 99;
-      const bw = b.position && POSITION_WEIGHT[b.position] !== undefined ? POSITION_WEIGHT[b.position] : 99;
-      if (aw !== bw) return aw - bw;
-      return a.riding_name.localeCompare(b.riding_name);
-    });
+  if (activeFilter === 'loa') {
+    const onLeaveNow = sortByPosition(allMembers.filter(m => m.status === 'loa'));
+    const returned = allMembers.filter(m => m.status === 'active' && (Number(m.loa_years_total) || 0) > 0)
+      .sort((a, b) => a.riding_name.localeCompare(b.riding_name));
 
-    listDiv.className = 'directory-grid';
-    listDiv.innerHTML = sorted.map(m => `
-      <div class="member-card ${m.status === 'loa' ? 'is-loa' : (m.position ? 'is-officer' : '')}">
-        ${m.status === 'loa' ? '<div class="loa-badge">On Leave</div>' : ''}
-        ${m.position ? `<div class="position-badge">${escapeHtml(m.position)}</div>` : ''}
-        ${m.special_status ? `<div class="special-badge ${m.special_status}">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'}</div>` : ''}
-        <div class="riding-name">${escapeHtml(m.riding_name)}</div>
-        ${m.legal_name ? `<div class="legal-name">${escapeHtml(m.legal_name)}</div>` : ''}
-        ${m.phone ? `<div class="detail-row"><a href="tel:${escapeHtml(m.phone.replace(/[^0-9+]/g, ''))}">${escapeHtml(m.phone)}</a></div>` : ''}
-        ${m.email ? `<div class="detail-row"><a href="mailto:${escapeHtml(m.email)}">${escapeHtml(m.email)}</a></div>` : ''}
-        ${m.birthday ? `<div class="detail-row">🎂 ${escapeHtml(m.birthday)}</div>` : ''}
-        ${m.colors_year ? `<div class="since">${tenureLabel(m)}</div>` : ''}
-        ${m.special_status && m.special_status_date ? `<div class="since">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'} since ${formatDate(m.special_status_date)}</div>` : ''}
-        ${m.status === 'loa' && m.loa_start ? `<div class="loa-notes">On leave since ${formatDate(m.loa_start)}${m.loa_notes ? ' — ' + escapeHtml(m.loa_notes) : ''}</div>` : ''}
-        ${loginBadge(m)}
+    if (onLeaveNow.length === 0 && returned.length === 0) {
+      listDiv.className = 'loading-text';
+      listDiv.textContent = 'No on-leave members on file.';
+      return;
+    }
+
+    listDiv.className = '';
+    let html = '<div class="section-subheading">Currently On Leave</div>';
+    html += onLeaveNow.length > 0
+      ? `<div class="directory-grid">${onLeaveNow.map(m => memberCardHtml(m, canManage)).join('')}</div>`
+      : `<div class="empty-note">No one is currently on leave.</div>`;
+
+    if (returned.length > 0) {
+      html += '<div class="section-subheading">Returned From Leave</div>';
+      html += `<div class="former-list">${returned.map(m => loaHistoryRowHtml(m, canManage)).join('')}</div>`;
+    }
+
+    listDiv.innerHTML = html;
+    return;
+  }
+
+  const members = allMembers.filter(m => m.status === 'former');
+  if (members.length === 0) {
+    listDiv.className = 'loading-text';
+    listDiv.textContent = 'No former members on file.';
+    return;
+  }
+  const sorted = [...members].sort((a, b) => a.riding_name.localeCompare(b.riding_name));
+  listDiv.className = 'former-list';
+  listDiv.innerHTML = sorted.map(m => `
+    <div class="former-row">
+      <div>${m.special_status ? `<span class="special-badge ${m.special_status}">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'}</span>` : ''}<span class="riding-name">${escapeHtml(m.riding_name)}</span>${m.legal_name ? `<span class="legal-name">${escapeHtml(m.legal_name)}</span>` : ''}</div>
+      <div>
+        <span class="years">${m.colors_year ? m.colors_year + '–' : ''}${m.status_year || ''}</span>
         ${canManage ? `
-          <div class="card-actions">
-            <button class="icon-btn" onclick="editMember('${m.id}')">Edit</button>
-            <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
-          </div>
+          <button class="icon-btn" onclick="editMember('${m.id}')" style="margin-left:0.6rem;">Edit</button>
+          <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
         ` : ''}
       </div>
-    `).join('');
-  } else {
-    const sorted = [...members].sort((a, b) => a.riding_name.localeCompare(b.riding_name));
-    listDiv.className = 'former-list';
-    listDiv.innerHTML = sorted.map(m => `
-      <div class="former-row">
-        <div>${m.special_status ? `<span class="special-badge ${m.special_status}">${m.special_status === 'lifer' ? 'Lifer' : 'Retiree'}</span>` : ''}<span class="riding-name">${escapeHtml(m.riding_name)}</span>${m.legal_name ? `<span class="legal-name">${escapeHtml(m.legal_name)}</span>` : ''}</div>
-        <div>
-          <span class="years">${m.colors_year ? m.colors_year + '–' : ''}${m.status_year || ''}${m.loa_years_total > 0 ? ` (${m.loa_years_total} yr LOA excluded)` : ''}</span>
-          ${canManage ? `
-            <button class="icon-btn" onclick="editMember('${m.id}')" style="margin-left:0.6rem;">Edit</button>
-            <button class="icon-btn danger" onclick="deleteMember('${m.id}')">Delete</button>
-          ` : ''}
-        </div>
-      </div>
-    `).join('');
-  }
+    </div>
+  `).join('');
+}
+
+function sortByPosition(members) {
+  return [...members].sort((a, b) => {
+    const aw = a.position && POSITION_WEIGHT[a.position] !== undefined ? POSITION_WEIGHT[a.position] : 99;
+    const bw = b.position && POSITION_WEIGHT[b.position] !== undefined ? POSITION_WEIGHT[b.position] : 99;
+    if (aw !== bw) return aw - bw;
+    return a.riding_name.localeCompare(b.riding_name);
+  });
 }
 
 document.getElementById('memberForm').addEventListener('submit', async (e) => {
