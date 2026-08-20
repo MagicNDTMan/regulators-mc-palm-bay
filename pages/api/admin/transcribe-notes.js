@@ -1,12 +1,15 @@
 import { requireOfficerCaller } from '../../../lib/supabase-admin';
 
-const MAX_IMAGES = 5;
+const MAX_FILES = 5;
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const PDF_TYPE = 'application/pdf';
 
-// Base64-encoded images inflate ~33% over binary size; the client resizes
-// each photo before upload, but 5 pages still needs more than the 1mb default.
+// Base64-encoded files inflate ~33% over binary size; the client resizes
+// each photo before upload, but scanned PDFs aren't resized, so 5 pages
+// still needs more than the 1mb default.
 export const config = {
   api: {
-    bodyParser: { sizeLimit: '15mb' }
+    bodyParser: { sizeLimit: '20mb' }
   }
 };
 
@@ -25,32 +28,30 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Transcription is not configured yet (missing API key)' });
   }
 
-  const { images } = req.body;
-  if (!Array.isArray(images) || images.length === 0) {
-    return res.status(400).json({ error: 'At least one image is required' });
+  const { files } = req.body;
+  if (!Array.isArray(files) || files.length === 0) {
+    return res.status(400).json({ error: 'At least one file is required' });
   }
-  if (images.length > MAX_IMAGES) {
-    return res.status(400).json({ error: `Please transcribe at most ${MAX_IMAGES} images at a time` });
+  if (files.length > MAX_FILES) {
+    return res.status(400).json({ error: `Please transcribe at most ${MAX_FILES} files at a time` });
   }
 
-  const allowedMediaTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  for (const img of images) {
-    if (!img.data || !img.mediaType || !allowedMediaTypes.includes(img.mediaType)) {
-      return res.status(400).json({ error: 'Invalid image data' });
+  for (const f of files) {
+    if (!f.data || !f.mediaType || ![...IMAGE_TYPES, PDF_TYPE].includes(f.mediaType)) {
+      return res.status(400).json({ error: 'Invalid file data' });
     }
   }
 
   try {
     const content = [
-      ...images.map(img => ({
-        type: 'image',
-        source: { type: 'base64', media_type: img.mediaType, data: img.data }
-      })),
+      ...files.map(f => f.mediaType === PDF_TYPE
+        ? { type: 'document', source: { type: 'base64', media_type: f.mediaType, data: f.data } }
+        : { type: 'image', source: { type: 'base64', media_type: f.mediaType, data: f.data } }),
       {
         type: 'text',
-        text: images.length > 1
-          ? 'These images are consecutive pages of handwritten motorcycle club meeting notes, in order. Transcribe them into clean plain text, preserving structure (bullet points, sections) where visible. Expand obvious shorthand only if unambiguous; otherwise transcribe as written. Output only the transcription, no commentary or preamble.'
-          : 'This image is handwritten motorcycle club meeting notes. Transcribe it into clean plain text, preserving structure (bullet points, sections) where visible. Expand obvious shorthand only if unambiguous; otherwise transcribe as written. Output only the transcription, no commentary or preamble.'
+        text: files.length > 1
+          ? 'These are consecutive pages of handwritten motorcycle club meeting notes, in order (a mix of photos and/or scanned PDFs). Transcribe them into clean plain text, preserving structure (bullet points, sections) where visible. Expand obvious shorthand only if unambiguous; otherwise transcribe as written. Output only the transcription, no commentary or preamble.'
+          : 'This file contains handwritten motorcycle club meeting notes (a photo or scanned PDF). Transcribe it into clean plain text, preserving structure (bullet points, sections) where visible. Expand obvious shorthand only if unambiguous; otherwise transcribe as written. Output only the transcription, no commentary or preamble.'
       }
     ];
 

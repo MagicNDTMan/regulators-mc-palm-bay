@@ -95,6 +95,9 @@ body { background: #0d0b10; }
 .photo-previews { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
 .photo-preview { position: relative; width: 90px; height: 90px; border-radius: 6px; overflow: hidden; border: 1px solid #4b1f7a; }
 .photo-preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-preview.pdf-preview { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.3rem; background: #0d0b10; padding: 0.4rem; text-align: center; }
+.photo-preview .pdf-icon { font-size: 1.6rem; }
+.photo-preview .pdf-name { color: #c9c9d1; font-size: 0.65rem; line-height: 1.2; word-break: break-all; max-height: 2.2em; overflow: hidden; }
 .photo-preview .remove-photo { position: absolute; top: 2px; right: 2px; background: rgba(13,11,16,0.85); color: #ff6b5a; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.8rem; line-height: 1; cursor: pointer; }
 </style>
 </head>
@@ -132,13 +135,13 @@ body { background: #0d0b10; }
         <button type="button" class="submit-btn" style="margin-top:0.6rem;" onclick="parseNotes()">Fill In From Notes &#8595;</button>
         <div id="parseNotice" class="parse-notice"></div>
 
-        <p class="dropzone-hint" style="margin-top:1.2rem;">Or, if your notes are handwritten, drop photos of the pages here — up to 5 pages, in order — and we'll transcribe them into the box above automatically.</p>
+        <p class="dropzone-hint" style="margin-top:1.2rem;">Or, if your notes are handwritten, drop photos or scanned PDFs of the pages here — up to 5 files, in order — and we'll transcribe them into the box above automatically.</p>
         <div id="photoDropzone" class="photo-dropzone">
-          Drag &amp; drop photos here, or <span class="photo-browse-link">browse files</span>
-          <input type="file" id="photoInput" accept="image/*" multiple style="display:none;" />
+          Drag &amp; drop photos or PDFs here, or <span class="photo-browse-link">browse files</span>
+          <input type="file" id="photoInput" accept="image/*,application/pdf" multiple style="display:none;" />
         </div>
         <div id="photoPreviews" class="photo-previews"></div>
-        <button type="button" class="submit-btn" id="transcribeBtn" style="margin-top:0.6rem; display:none;" onclick="transcribePhotos()">Transcribe Photos &#8595;</button>
+        <button type="button" class="submit-btn" id="transcribeBtn" style="margin-top:0.6rem; display:none;" onclick="transcribePhotos()">Transcribe Notes &#8595;</button>
         <div id="transcribeNotice" class="parse-notice"></div>
       </div>
       <hr class="form-divider">
@@ -495,6 +498,15 @@ document.getElementById('notesDropzone').addEventListener('paste', () => {
 const MAX_PHOTOS = 5;
 let selectedPhotos = [];
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onload = () => resolve(reader.result);
+    reader.readAsDataURL(file);
+  });
+}
+
 function resizeImageFile(file, maxDim) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -526,16 +538,21 @@ function resizeImageFile(file, maxDim) {
 }
 
 async function addPhotos(fileList) {
-  const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+  const files = Array.from(fileList).filter(f => f.type.startsWith('image/') || f.type === 'application/pdf');
   const remainingSlots = MAX_PHOTOS - selectedPhotos.length;
   if (remainingSlots <= 0) return;
 
   for (const file of files.slice(0, remainingSlots)) {
     try {
-      const dataUrl = await resizeImageFile(file, 1600);
-      selectedPhotos.push(dataUrl);
+      if (file.type === 'application/pdf') {
+        const dataUrl = await readFileAsDataUrl(file);
+        selectedPhotos.push({ dataUrl, isPdf: true, name: file.name });
+      } else {
+        const dataUrl = await resizeImageFile(file, 1600);
+        selectedPhotos.push({ dataUrl, isPdf: false, name: file.name });
+      }
     } catch (err) {
-      console.error('Could not process image:', err);
+      console.error('Could not process file:', err);
     }
   }
   renderPhotoPreviews();
@@ -548,9 +565,15 @@ function removePhoto(index) {
 
 function renderPhotoPreviews() {
   const wrap = document.getElementById('photoPreviews');
-  wrap.innerHTML = selectedPhotos.map((dataUrl, i) => `
+  wrap.innerHTML = selectedPhotos.map((item, i) => item.isPdf ? `
+    <div class="photo-preview pdf-preview">
+      <span class="pdf-icon">📄</span>
+      <span class="pdf-name">${escapeHtml(item.name || 'Scanned PDF')}</span>
+      <button type="button" class="remove-photo" onclick="removePhoto(${i})">&times;</button>
+    </div>
+  ` : `
     <div class="photo-preview">
-      <img src="${dataUrl}" alt="Note page ${i + 1}" />
+      <img src="${item.dataUrl}" alt="Note page ${i + 1}" />
       <button type="button" class="remove-photo" onclick="removePhoto(${i})">&times;</button>
     </div>
   `).join('');
@@ -589,8 +612,8 @@ async function transcribePhotos() {
 
   try {
     const { data: { session } } = await sb.auth.getSession();
-    const images = selectedPhotos.map(dataUrl => {
-      const [header, base64] = dataUrl.split(',');
+    const files = selectedPhotos.map(item => {
+      const [header, base64] = item.dataUrl.split(',');
       const mediaType = header.match(/data:(.*?);base64/)[1];
       return { data: base64, mediaType };
     });
@@ -601,7 +624,7 @@ async function transcribePhotos() {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer ' + session.access_token
       },
-      body: JSON.stringify({ images })
+      body: JSON.stringify({ files })
     });
     const result = await res.json();
 
@@ -626,7 +649,7 @@ async function transcribePhotos() {
     noticeDiv.className = 'parse-notice warn';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Transcribe Photos ↓';
+    btn.textContent = 'Transcribe Notes ↓';
   }
 }
 
