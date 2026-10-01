@@ -52,6 +52,7 @@
         <li><a href="index.html">Home</a></li>
         <li><a href="events.html" class="active">Events</a></li>
         <li><a href="gallery.html">Gallery</a></li>
+        <li><a href="sponsors.html">Sponsors</a></li>
         <li><a href="contact.html">Contact</a></li>
         <li><a href="#" onclick="openLoginModal(event)">Members</a></li>
       </ul>
@@ -134,21 +135,26 @@
 
   <section>
     <h2>Current Flyers</h2>
-    <div class="gallery-grid">
-      <figure>
-        <img src="assets/flyer-roys-bike-night.jpeg" alt="Sunday Bike Night at Roy's Grill and Lounge flyer">
-        <figcaption>Sunday Bike Night at Roy's</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/flyer-clicktight-bike-night.jpg" alt="Click Tight Rydaz MC Bike Night flyer">
-        <figcaption>Click Tight Rydaz Bike Night — Orlando</figcaption>
-      </figure>
-      <figure>
-        <img src="assets/flyer-megacity-classic.jpg" alt="Megacity MCs Annual Classic Weekend flyer">
-        <figcaption>Megacity MCs Classic Weekend — November</figcaption>
-      </figure>
+    <p class="lead">Tap a flyer to open it full size.</p>
+    <div class="flyer-buttons">
+      <a class="btn flyer-btn" href="assets/flyer-roys-bike-night.jpeg" data-alt="Sunday Bike Night at Roy's Grill and Lounge flyer">Sunday Bike Night at Roy's</a>
+      <a class="btn flyer-btn" href="assets/flyer-clicktight-bike-night.jpg" data-alt="Click Tight Rydaz MC Bike Night flyer">Click Tight Rydaz Bike Night — Orlando</a>
+      <a class="btn flyer-btn" href="assets/flyer-megacity-classic.jpg" data-alt="Megacity MCs Annual Classic Weekend flyer">Megacity MCs Classic Weekend — November</a>
+      <a class="btn flyer-btn" href="assets/flyer-abate-bike-night-malabar-mos.jpg" data-alt="ABATE Lagoon Chapter Bike Night at Malabar Mo's flyer">ABATE Bike Night at Malabar Mo's — Fri Oct 2</a>
+      <a class="btn flyer-btn" href="assets/flyer-abate-state-party-inglis.jpg" data-alt="ABATE of Florida State Party and Meeting at Scooter Haven Country Club flyer">ABATE State Party &amp; Meeting — Inglis, Oct 10–11</a>
+      <a class="btn flyer-btn" href="assets/flyer-legion-post81-poker-run.jpg" data-alt="American Legion Riders Post 81 Route 81 Poker Run flyer">Legion Riders Post 81 Poker Run — Sun Nov 1</a>
+      <a class="btn flyer-btn" href="assets/flyer-abate-state-meeting-daytona.jpg" data-alt="ABATE State Meeting hosted by the Daytona Beach Chapter flyer">ABATE State Meeting — Ormond Beach, Sat Dec 12</a>
+      <a class="btn flyer-btn" href="assets/flyer-abate-state-meetings-schedule.jpg" data-alt="ABATE of Florida 2026 and 2027 State Meetings schedule">ABATE State Meeting Schedule — 2026–27</a>
     </div>
   </section>
+
+  <dialog id="flyerViewer" class="flyer-viewer">
+    <div class="flyer-viewer-bar">
+      <a id="flyerFull" class="btn btn-outline" href="#" target="_blank" rel="noopener">Open Full Size</a>
+      <button type="button" class="btn" onclick="document.getElementById('flyerViewer').close()">Close</button>
+    </div>
+    <img id="flyerImg" src="" alt="">
+  </dialog>
 
   <section>
     <h2>Members</h2>
@@ -224,6 +230,23 @@
 </div>
 
 <script>
+// Flyer buttons open the flyer in a full-screen viewer; without <dialog> support the link just opens the image.
+document.querySelectorAll('.flyer-btn').forEach(function (btn) {
+  btn.addEventListener('click', function (e) {
+    var viewer = document.getElementById('flyerViewer');
+    if (typeof viewer.showModal !== 'function') return;
+    e.preventDefault();
+    var img = document.getElementById('flyerImg');
+    img.src = btn.getAttribute('href');
+    img.alt = btn.dataset.alt;
+    document.getElementById('flyerFull').href = btn.getAttribute('href');
+    viewer.showModal();
+  });
+});
+document.getElementById('flyerViewer').addEventListener('click', function (e) {
+  if (e.target === this) this.close();
+});
+
 function openLoginModal(e) {
   e.preventDefault();
   document.getElementById('loginModal').classList.add('open');
