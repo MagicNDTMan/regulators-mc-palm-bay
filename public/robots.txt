@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# The members portal (members*.html, reset-password.html) is NOT listed here on
+# purpose: those pages carry noindex (meta tag + X-Robots-Tag header), and a
+# Disallow would stop crawlers from ever reading that noindex.
+
+Sitemap: https://www.regulatorsmcpalmbay.com/sitemap.xml
