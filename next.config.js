@@ -7,6 +7,8 @@ const nextConfig = {
 
   async redirects() {
     return [
+      // The Gallery page was retired 2026-10-17; its old address goes home.
+      { source: '/gallery.html', destination: '/', permanent: true },
       // One address per page for search engines: the bare domain and the
       // project's *.vercel.app production alias both send visitors to www.
       // (Preview deployment URLs have other hostnames and are not affected.)
